@@ -1,0 +1,1061 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState, useEffect } from 'react';
+import {
+  AppItem,
+  WebsiteItem,
+  SkillItem,
+  InquiryItem,
+  db,
+  APPS_COLLECTION,
+  WEBSITES_COLLECTION,
+  SKILLS_COLLECTION,
+  INQUIRIES_COLLECTION
+} from '../firebase';
+import {
+  collection,
+  addDoc,
+  deleteDoc,
+  doc,
+  updateDoc
+} from 'firebase/firestore';
+import {
+  ArrowLeft,
+  Plus,
+  Trash2,
+  Edit2,
+  Smartphone,
+  Globe,
+  Award,
+  Inbox,
+  CheckCircle,
+  Download,
+  Lock,
+  Unlock,
+  KeyRound,
+  ExternalLink,
+  Phone,
+  Mail,
+  X
+} from 'lucide-react';
+import { getSkillIcon, WhatsAppLogo } from './Icons';
+
+interface AdminPanelProps {
+  apps: AppItem[];
+  websites: WebsiteItem[];
+  skills: SkillItem[];
+  inquiries: InquiryItem[];
+  onBack: () => void;
+  onRefresh: () => void;
+}
+
+const ADMIN_PASSWORD = '2026';
+
+export default function AdminPanel({
+  apps,
+  websites,
+  skills,
+  inquiries,
+  onBack,
+  onRefresh
+}: AdminPanelProps) {
+  // Password Authentication State
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return sessionStorage.getItem('kn_admin_auth') === 'true';
+  });
+  const [passwordInput, setPasswordInput] = useState<string>('');
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  const [activeTab, setActiveTab] = useState<'apps' | 'websites' | 'skills' | 'inquiries'>('apps');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Local optimistic lists for instant updates
+  const [localApps, setLocalApps] = useState<AppItem[]>(apps);
+  const [localWebsites, setLocalWebsites] = useState<WebsiteItem[]>(websites);
+  const [localSkills, setLocalSkills] = useState<SkillItem[]>(skills);
+  const [localInquiries, setLocalInquiries] = useState<InquiryItem[]>(inquiries);
+
+  useEffect(() => { setLocalApps(apps); }, [apps]);
+  useEffect(() => { setLocalWebsites(websites); }, [websites]);
+  useEffect(() => { setLocalSkills(skills); }, [skills]);
+  useEffect(() => { setLocalInquiries(inquiries); }, [inquiries]);
+
+  // Delete Confirmation Modal State (Reliable in all iframe and mobile environments)
+  const [pendingDelete, setPendingDelete] = useState<{
+    type: 'app' | 'website' | 'skill' | 'inquiry';
+    id: string;
+    title: string;
+  } | null>(null);
+
+  // App form state
+  const [appTitle, setAppTitle] = useState('');
+  const [appDescription, setAppDescription] = useState('');
+  const [appCategory, setAppCategory] = useState('Android App');
+  const [appVersion, setAppVersion] = useState('v1.0.0');
+  const [appLogoUrl, setAppLogoUrl] = useState('');
+  const [appApkUrl, setAppApkUrl] = useState('');
+  const [apkFileName, setApkFileName] = useState('');
+  const [apkSize, setApkSize] = useState('18.4 MB');
+  const [appScreenshots, setAppScreenshots] = useState('');
+  const [editingAppId, setEditingAppId] = useState<string | null>(null);
+
+  // Website form state
+  const [webTitle, setWebTitle] = useState('');
+  const [webDescription, setWebDescription] = useState('');
+  const [webPreviewUrl, setWebPreviewUrl] = useState('');
+  const [webLiveUrl, setWebLiveUrl] = useState('');
+  const [webTags, setWebTags] = useState('React, Tailwind');
+  const [editingWebId, setEditingWebId] = useState<string | null>(null);
+
+  // Skill form state
+  const [skillName, setSkillName] = useState('');
+  const [skillCategory, setSkillCategory] = useState('Development');
+  const [skillIconType, setSkillIconType] = useState('android');
+  const [skillColor, setSkillColor] = useState('#3ddc84');
+  const [editingSkillId, setEditingSkillId] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordInput.trim() === ADMIN_PASSWORD) {
+      setIsAuthenticated(true);
+      sessionStorage.setItem('kn_admin_auth', 'true');
+      setAuthError(null);
+    } else {
+      setAuthError('Incorrect Password! Please try again.');
+    }
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    sessionStorage.removeItem('kn_admin_auth');
+    setPasswordInput('');
+  };
+
+  // App Logo file to dataURL helper
+  const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAppLogoUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Save / Update App
+  const handleSaveApp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!appTitle.trim()) return;
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        title: appTitle.trim(),
+        description: appDescription.trim(),
+        category: appCategory.trim(),
+        version: appVersion.trim() || 'v1.0.0',
+        logoUrl: appLogoUrl.trim() || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150',
+        apkUrl: appApkUrl.trim() || '#',
+        apkFileName: apkFileName.trim() || `${appTitle.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_v1.apk`,
+        apkSize: apkSize.trim() || '15 MB',
+        screenshots: appScreenshots.trim(),
+        createdAt: new Date().toLocaleDateString()
+      };
+
+      if (editingAppId) {
+        await updateDoc(doc(db, APPS_COLLECTION, editingAppId), payload);
+        showToast('App updated live in database!');
+      } else {
+        await addDoc(collection(db, APPS_COLLECTION), payload);
+        showToast('New App published live for all visitors!');
+      }
+
+      setAppTitle('');
+      setAppDescription('');
+      setAppLogoUrl('');
+      setAppApkUrl('');
+      setApkFileName('');
+      setAppScreenshots('');
+      setEditingAppId(null);
+      onRefresh();
+    } catch (err) {
+      console.error('Save app error:', err);
+      showToast('Error saving app to Firestore');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Save / Update Website
+  const handleSaveWebsite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!webTitle.trim()) return;
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        title: webTitle.trim(),
+        description: webDescription.trim(),
+        previewUrl: webPreviewUrl.trim() || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600',
+        liveUrl: webLiveUrl.trim() || '#',
+        tags: webTags.trim(),
+        createdAt: new Date().toLocaleDateString()
+      };
+
+      if (editingWebId) {
+        await updateDoc(doc(db, WEBSITES_COLLECTION, editingWebId), payload);
+        showToast('Website updated live!');
+      } else {
+        await addDoc(collection(db, WEBSITES_COLLECTION), payload);
+        showToast('Website published live!');
+      }
+
+      setWebTitle('');
+      setWebDescription('');
+      setWebPreviewUrl('');
+      setWebLiveUrl('');
+      setEditingWebId(null);
+      onRefresh();
+    } catch (err) {
+      console.error('Save website error:', err);
+      showToast('Error saving website');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Save / Update Skill
+  const handleSaveSkill = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!skillName.trim()) return;
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        name: skillName.trim(),
+        category: skillCategory.trim(),
+        iconType: skillIconType.trim(),
+        color: skillColor.trim(),
+        order: skills.length + 1
+      };
+
+      if (editingSkillId) {
+        await updateDoc(doc(db, SKILLS_COLLECTION, editingSkillId), payload);
+        showToast('Skill updated live on website!');
+      } else {
+        await addDoc(collection(db, SKILLS_COLLECTION), payload);
+        showToast('Skill added live to website!');
+      }
+
+      setSkillName('');
+      setEditingSkillId(null);
+      onRefresh();
+    } catch (err) {
+      console.error('Save skill error:', err);
+      showToast('Error saving skill');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Execute confirmed deletion without relying on blocked window.confirm
+  const executeDelete = async () => {
+    if (!pendingDelete) return;
+    const { type, id, title } = pendingDelete;
+    setPendingDelete(null);
+
+    try {
+      if (type === 'app') {
+        setLocalApps((prev) => prev.filter((a) => a.id !== id));
+        try {
+          const cached = localStorage.getItem('kn_cached_apps');
+          if (cached) {
+            const list = JSON.parse(cached).filter((a: AppItem) => a.id !== id);
+            localStorage.setItem('kn_cached_apps', JSON.stringify(list));
+          }
+        } catch (e) {}
+        await deleteDoc(doc(db, APPS_COLLECTION, id));
+        showToast(`App "${title}" deleted from database`);
+      } else if (type === 'website') {
+        setLocalWebsites((prev) => prev.filter((w) => w.id !== id));
+        try {
+          const cached = localStorage.getItem('kn_cached_websites');
+          if (cached) {
+            const list = JSON.parse(cached).filter((w: WebsiteItem) => w.id !== id);
+            localStorage.setItem('kn_cached_websites', JSON.stringify(list));
+          }
+        } catch (e) {}
+        await deleteDoc(doc(db, WEBSITES_COLLECTION, id));
+        showToast(`Website "${title}" deleted`);
+      } else if (type === 'skill') {
+        setLocalSkills((prev) => prev.filter((s) => s.id !== id));
+        try {
+          const cached = localStorage.getItem('kn_cached_skills');
+          if (cached) {
+            const list = JSON.parse(cached).filter((s: SkillItem) => s.id !== id);
+            localStorage.setItem('kn_cached_skills', JSON.stringify(list));
+          }
+        } catch (e) {}
+        await deleteDoc(doc(db, SKILLS_COLLECTION, id));
+        showToast(`Skill "${title}" deleted`);
+      } else if (type === 'inquiry') {
+        setLocalInquiries((prev) => prev.filter((i) => i.id !== id));
+        await deleteDoc(doc(db, INQUIRIES_COLLECTION, id));
+        showToast('Inquiry deleted from database');
+      }
+
+      onRefresh();
+    } catch (err) {
+      console.error('Delete error:', err);
+      showToast('Delete failed. Please try again.');
+    }
+  };
+
+  // PASSWORD GATE: If not authenticated, require PIN "2026"
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
+        <div className="w-full max-w-sm bg-[#0e0e15] border border-[#222230] rounded-3xl p-7 shadow-2xl space-y-6 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-blue-600/20 border border-blue-500/40 text-blue-500 flex items-center justify-center mx-auto shadow-inner">
+            <Lock className="w-8 h-8" />
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-black tracking-tight text-white">KN Builders Admin</h2>
+            <p className="text-xs text-slate-400 mt-1">Enter Admin PIN to manage apps, websites, skills & inquiries</p>
+          </div>
+
+          {authError && (
+            <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/40 text-red-400 text-xs font-semibold">
+              {authError}
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="relative">
+              <KeyRound className="w-4 h-4 text-slate-500 absolute left-4 top-1/2 -translate-y-1/2" />
+              <input
+                type="password"
+                required
+                autoFocus
+                value={passwordInput}
+                onChange={(e) => {
+                  setPasswordInput(e.target.value);
+                  setAuthError(null);
+                }}
+                placeholder="Enter Admin PIN"
+                className="w-full bg-[#161622] border border-[#2a2a3a] rounded-2xl pl-11 pr-4 py-3.5 text-center text-lg font-bold tracking-widest text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-lg shadow-blue-600/30 transition-all cursor-pointer active:scale-95 text-sm"
+            >
+              Unlock Admin Panel
+            </button>
+          </form>
+
+          <button
+            onClick={onBack}
+            className="text-xs text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+          >
+            ← Return to Website
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-black text-white p-4 sm:p-8 relative">
+      
+      {/* Custom In-App Delete Confirmation Modal */}
+      {pendingDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="w-full max-w-sm bg-[#111119] border border-[#2b2b3a] rounded-3xl p-6 space-y-4 shadow-2xl">
+            <div className="w-12 h-12 rounded-2xl bg-red-500/20 text-red-400 flex items-center justify-center mx-auto border border-red-500/30 shadow-inner">
+              <Trash2 className="w-6 h-6" />
+            </div>
+
+            <div className="text-center space-y-1">
+              <h3 className="text-lg font-bold text-white">Delete {pendingDelete.type.toUpperCase()}?</h3>
+              <p className="text-sm font-semibold text-slate-200">"{pendingDelete.title}"</p>
+              <p className="text-xs text-slate-400 pt-1">
+                This will be permanently removed from the live Firestore database and will disappear for all website visitors.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-3 border-t border-[#1f1f2c]">
+              <button
+                onClick={() => setPendingDelete(null)}
+                className="py-3 rounded-xl bg-[#1e1e28] hover:bg-[#282836] text-xs font-semibold text-slate-300 cursor-pointer transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={executeDelete}
+                className="py-3 rounded-xl bg-red-600 hover:bg-red-500 text-xs font-bold text-white shadow-lg shadow-red-600/30 cursor-pointer transition-all active:scale-95"
+              >
+                Yes, Delete Live
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Feedback */}
+      {toastMessage && (
+        <div className="fixed top-5 right-5 z-50 bg-[#16a34a] text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-2 border border-green-400">
+          <CheckCircle className="w-5 h-5 shrink-0" />
+          <span className="text-sm font-semibold">{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="max-w-6xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#22222a]">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onBack}
+            className="w-10 h-10 rounded-full bg-[#181820] hover:bg-[#252530] border border-[#2e2e3a] flex items-center justify-center transition-all cursor-pointer active:scale-95"
+          >
+            <ArrowLeft className="w-5 h-5 text-white" />
+          </button>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-black">
+              KN Builders <span className="text-blue-500 font-bold text-base">Admin Panel</span>
+            </h1>
+            <p className="text-xs text-slate-400">Live Firebase sync active — updates reflect instantly for all visitors</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleLogout}
+            title="Lock Admin Session"
+            className="px-3.5 py-2 rounded-xl bg-[#1e1e28] hover:bg-[#282836] border border-[#2e2e3e] text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer flex items-center gap-1.5"
+          >
+            <Lock className="w-3.5 h-3.5 text-amber-400" />
+            <span>Lock</span>
+          </button>
+
+          <button
+            onClick={onBack}
+            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs sm:text-sm font-bold text-white transition-all cursor-pointer shadow-md shadow-blue-600/30"
+          >
+            View Live Website
+          </button>
+        </div>
+      </div>
+
+      {/* Nav Tabs */}
+      <div className="max-w-6xl mx-auto mt-6 flex gap-2 overflow-x-auto pb-2">
+        <button
+          onClick={() => setActiveTab('apps')}
+          className={`px-5 py-3 rounded-2xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+            activeTab === 'apps'
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+              : 'bg-[#121218] text-slate-400 hover:text-white border border-[#20202a]'
+          }`}
+        >
+          <Smartphone className="w-4 h-4" />
+          <span>Apps ({localApps.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('websites')}
+          className={`px-5 py-3 rounded-2xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+            activeTab === 'websites'
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+              : 'bg-[#121218] text-slate-400 hover:text-white border border-[#20202a]'
+          }`}
+        >
+          <Globe className="w-4 h-4" />
+          <span>Websites ({localWebsites.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('skills')}
+          className={`px-5 py-3 rounded-2xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+            activeTab === 'skills'
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+              : 'bg-[#121218] text-slate-400 hover:text-white border border-[#20202a]'
+          }`}
+        >
+          <Award className="w-4 h-4" />
+          <span>Skills ({localSkills.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('inquiries')}
+          className={`px-5 py-3 rounded-2xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+            activeTab === 'inquiries'
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+              : 'bg-[#121218] text-slate-400 hover:text-white border border-[#20202a]'
+          }`}
+        >
+          <Inbox className="w-4 h-4" />
+          <span>Inquiries ({localInquiries.length})</span>
+        </button>
+      </div>
+
+      {/* Main Tab Content */}
+      <div className="max-w-6xl mx-auto mt-6">
+        
+        {/* ===================== APPS TAB ===================== */}
+        {activeTab === 'apps' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Form */}
+            <div className="lg:col-span-1 bg-[#0f0f15] border border-[#22222d] rounded-3xl p-5 sm:p-6 space-y-4">
+              <h2 className="text-lg font-bold flex items-center gap-2">
+                <Plus className="w-5 h-5 text-blue-500" />
+                <span>{editingAppId ? 'Edit App Details' : 'Add New App'}</span>
+              </h2>
+
+              <form onSubmit={handleSaveApp} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">App Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={appTitle}
+                    onChange={(e) => setAppTitle(e.target.value)}
+                    placeholder="e.g. Pulse Fitness"
+                    className="w-full bg-[#181820] border border-[#2c2c38] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Category</label>
+                  <input
+                    type="text"
+                    value={appCategory}
+                    onChange={(e) => setAppCategory(e.target.value)}
+                    placeholder="Health & Fitness, Utilities, Gaming"
+                    className="w-full bg-[#181820] border border-[#2c2c38] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Version</label>
+                  <input
+                    type="text"
+                    value={appVersion}
+                    onChange={(e) => setAppVersion(e.target.value)}
+                    placeholder="v1.0.0"
+                    className="w-full bg-[#181820] border border-[#2c2c38] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Description</label>
+                  <textarea
+                    rows={3}
+                    value={appDescription}
+                    onChange={(e) => setAppDescription(e.target.value)}
+                    placeholder="Describe what the app does, key features..."
+                    className="w-full bg-[#181820] border border-[#2c2c38] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 resize-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">App Icon / Logo</label>
+                  <div className="space-y-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoSelect}
+                      className="block w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-600/20 file:text-blue-400 hover:file:bg-blue-600/30 cursor-pointer"
+                    />
+                    <input
+                      type="url"
+                      value={appLogoUrl}
+                      onChange={(e) => setAppLogoUrl(e.target.value)}
+                      placeholder="Or enter image URL: https://..."
+                      className="w-full bg-[#181820] border border-[#2c2c38] rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    APK Download Link (URL)
+                  </label>
+                  <input
+                    type="text"
+                    value={appApkUrl}
+                    onChange={(e) => setAppApkUrl(e.target.value)}
+                    placeholder="https://drive.google.com/... or direct APK URL"
+                    className="w-full bg-[#181820] border border-[#2c2c38] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">APK File Name</label>
+                    <input
+                      type="text"
+                      value={apkFileName}
+                      onChange={(e) => setApkFileName(e.target.value)}
+                      placeholder="app_v1.apk"
+                      className="w-full bg-[#181820] border border-[#2c2c38] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">APK Size</label>
+                    <input
+                      type="text"
+                      value={apkSize}
+                      onChange={(e) => setApkSize(e.target.value)}
+                      placeholder="18.4 MB"
+                      className="w-full bg-[#181820] border border-[#2c2c38] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Screenshot URLs (comma separated)
+                  </label>
+                  <input
+                    type="text"
+                    value={appScreenshots}
+                    onChange={(e) => setAppScreenshots(e.target.value)}
+                    placeholder="https://img1.jpg, https://img2.jpg"
+                    className="w-full bg-[#181820] border border-[#2c2c38] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold text-sm text-white transition-all cursor-pointer shadow-lg shadow-blue-600/30"
+                >
+                  {editingAppId ? 'Update App' : 'Add App'}
+                </button>
+              </form>
+            </div>
+
+            {/* List */}
+            <div className="lg:col-span-2 space-y-4">
+              <h2 className="text-lg font-bold">Published Apps ({localApps.length})</h2>
+              {localApps.length === 0 ? (
+                <div className="p-8 text-center bg-[#0e0e14] border border-[#20202a] rounded-3xl text-slate-400 text-sm">
+                  No apps currently in database. Add your first app using the form on the left!
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {localApps.map((app) => (
+                    <div
+                      key={app.id}
+                      className="bg-[#0f0f15] border border-[#22222d] rounded-2xl p-4 flex flex-col justify-between hover:border-blue-500/50 transition-all hover:scale-[1.02]"
+                    >
+                      <div className="flex items-start gap-3">
+                        <img
+                          src={app.logoUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100'}
+                          alt={app.title}
+                          className="w-14 h-14 rounded-2xl object-cover border border-[#252535] shrink-0"
+                        />
+                        <div className="overflow-hidden flex-1">
+                          <h3 className="font-bold text-sm text-white truncate">{app.title}</h3>
+                          <span className="text-[11px] text-blue-400 font-semibold block">{app.category || 'Android App'}</span>
+                          <span className="text-[10px] text-slate-400">{app.version || 'v1.0.0'} • {app.apkSize || '15 MB'}</span>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-slate-300 mt-2.5 line-clamp-2">{app.description || 'No description provided'}</p>
+
+                      <div className="mt-4 pt-3 border-t border-[#1f1f28] flex items-center justify-between">
+                        <span className="text-[10px] text-slate-500 truncate max-w-[120px]">{app.apkFileName || 'APK'}</span>
+
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => {
+                              setEditingAppId(app.id);
+                              setAppTitle(app.title);
+                              setAppDescription(app.description || '');
+                              setAppCategory(app.category || 'Android App');
+                              setAppVersion(app.version || 'v1.0.0');
+                              setAppLogoUrl(app.logoUrl || '');
+                              setAppApkUrl(app.apkUrl || '');
+                              setApkFileName(app.apkFileName || '');
+                              setApkSize(app.apkSize || '15 MB');
+                              setAppScreenshots(app.screenshots || '');
+                            }}
+                            className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                            title="Edit App"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setPendingDelete({ type: 'app', id: app.id, title: app.title })}
+                            className="p-1.5 rounded-lg hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors cursor-pointer"
+                            title="Delete App"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ===================== WEBSITES TAB ===================== */}
+        {activeTab === 'websites' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1 bg-[#0f0f15] border border-[#22222d] rounded-3xl p-5 sm:p-6 space-y-4">
+              <h2 className="text-lg font-bold flex items-center gap-2">
+                <Plus className="w-5 h-5 text-blue-500" />
+                <span>{editingWebId ? 'Edit Website' : 'Add New Website'}</span>
+              </h2>
+
+              <form onSubmit={handleSaveWebsite} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Website Title *</label>
+                  <input
+                    type="text"
+                    required
+                    value={webTitle}
+                    onChange={(e) => setWebTitle(e.target.value)}
+                    placeholder="e.g. Apex Portfolio"
+                    className="w-full bg-[#181820] border border-[#2c2c38] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Description</label>
+                  <textarea
+                    rows={3}
+                    value={webDescription}
+                    onChange={(e) => setWebDescription(e.target.value)}
+                    placeholder="What the website is about..."
+                    className="w-full bg-[#181820] border border-[#2c2c38] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 resize-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Live URL</label>
+                  <input
+                    type="url"
+                    value={webLiveUrl}
+                    onChange={(e) => setWebLiveUrl(e.target.value)}
+                    placeholder="https://example.com"
+                    className="w-full bg-[#181820] border border-[#2c2c38] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Tags (Technologies)</label>
+                  <input
+                    type="text"
+                    value={webTags}
+                    onChange={(e) => setWebTags(e.target.value)}
+                    placeholder="React, Next.js, Tailwind"
+                    className="w-full bg-[#181820] border border-[#2c2c38] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold text-sm text-white transition-all cursor-pointer shadow-lg shadow-blue-600/30"
+                >
+                  {editingWebId ? 'Update Website' : 'Add Website'}
+                </button>
+              </form>
+            </div>
+
+            <div className="lg:col-span-2 space-y-4">
+              <h2 className="text-lg font-bold">Published Websites ({localWebsites.length})</h2>
+              {localWebsites.length === 0 ? (
+                <div className="p-8 text-center bg-[#0e0e14] border border-[#20202a] rounded-3xl text-slate-400 text-sm">
+                  No websites added yet. Add one using the form on the left!
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {localWebsites.map((web) => (
+                    <div
+                      key={web.id}
+                      className="bg-[#0f0f15] border border-[#22222d] rounded-2xl p-4 flex flex-col justify-between hover:border-blue-500/50 transition-all hover:scale-[1.02]"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-bold text-base text-white">{web.title}</h3>
+                          <span className="text-[11px] text-blue-400">{web.tags || 'Web App'}</span>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-2 line-clamp-2">{web.description}</p>
+                      </div>
+
+                      <div className="mt-4 pt-3 border-t border-[#1f1f28] flex items-center justify-between">
+                        {web.liveUrl && (
+                          <a
+                            href={web.liveUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-xs text-slate-300 hover:text-white flex items-center gap-1"
+                          >
+                            <span>Live Preview</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+
+                        <div className="flex items-center gap-1.5 ml-auto">
+                          <button
+                            onClick={() => {
+                              setEditingWebId(web.id);
+                              setWebTitle(web.title);
+                              setWebDescription(web.description || '');
+                              setWebLiveUrl(web.liveUrl || '');
+                              setWebTags(web.tags || '');
+                            }}
+                            className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setPendingDelete({ type: 'website', id: web.id, title: web.title })}
+                            className="p-1.5 rounded-lg hover:bg-red-500/20 text-slate-400 hover:text-red-400 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ===================== SKILLS TAB ===================== */}
+        {activeTab === 'skills' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1 bg-[#0f0f15] border border-[#22222d] rounded-3xl p-5 sm:p-6 space-y-4">
+              <h2 className="text-lg font-bold flex items-center gap-2">
+                <Plus className="w-5 h-5 text-blue-500" />
+                <span>{editingSkillId ? 'Edit Skill' : 'Add New Skill'}</span>
+              </h2>
+
+              <form onSubmit={handleSaveSkill} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Skill Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={skillName}
+                    onChange={(e) => setSkillName(e.target.value)}
+                    placeholder="e.g. Flutter Apps, React Native, Node.js"
+                    className="w-full bg-[#181820] border border-[#2c2c38] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Category</label>
+                  <input
+                    type="text"
+                    value={skillCategory}
+                    onChange={(e) => setSkillCategory(e.target.value)}
+                    placeholder="e.g. Mobile, Frontend, Backend, UI/UX"
+                    className="w-full bg-[#181820] border border-[#2c2c38] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Icon Style</label>
+                  <select
+                    value={skillIconType}
+                    onChange={(e) => setSkillIconType(e.target.value)}
+                    className="w-full bg-[#181820] border border-[#2c2c38] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="android">Android Robot Logo</option>
+                    <option value="code">HTML / CSS / JS Code</option>
+                    <option value="firebase">Firebase Cloud Flame</option>
+                    <option value="figma">UI/UX Figma Logo</option>
+                    <option value="palette">Art & Visuals Palette</option>
+                  </select>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold text-sm text-white transition-all cursor-pointer shadow-lg shadow-blue-600/30"
+                >
+                  {editingSkillId ? 'Update Skill' : 'Add Skill'}
+                </button>
+              </form>
+            </div>
+
+            <div className="lg:col-span-2 space-y-4">
+              <h2 className="text-lg font-bold">Active Skills on Website ({localSkills.length})</h2>
+              {localSkills.length === 0 ? (
+                <div className="p-8 text-center bg-[#0e0e14] border border-[#20202a] rounded-3xl text-slate-400 text-sm">
+                  No skills in database. Add a new skill on the left!
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {localSkills.map((skill) => (
+                    <div
+                      key={skill.id}
+                      className="bg-[#0f0f15] border border-[#22222d] rounded-2xl p-4 flex items-center justify-between hover:border-blue-500/50 transition-all hover:scale-[1.02]"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-[#181822] flex items-center justify-center shrink-0 border border-[#262634]">
+                          {getSkillIcon(skill.iconType, 'w-5 h-5')}
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-sm text-white">{skill.name}</h4>
+                          <span className="text-[11px] text-slate-400">{skill.category || 'Skill'}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => {
+                            setEditingSkillId(skill.id);
+                            setSkillName(skill.name);
+                            setSkillCategory(skill.category || '');
+                            setSkillIconType(skill.iconType || 'android');
+                          }}
+                          className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"
+                          title="Edit Skill"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setPendingDelete({ type: 'skill', id: skill.id, title: skill.name })}
+                          className="p-1 rounded-lg hover:bg-red-500/20 text-slate-400 hover:text-red-400 cursor-pointer"
+                          title="Delete Skill"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ===================== INQUIRIES TAB ===================== */}
+        {activeTab === 'inquiries' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold">Client Project Requests ({localInquiries.length})</h2>
+                <p className="text-xs text-slate-400">Manage client submissions, view phone numbers and reply directly via WhatsApp or Email</p>
+              </div>
+            </div>
+
+            {localInquiries.length === 0 ? (
+              <div className="p-8 text-center bg-[#0e0e14] border border-[#20202a] rounded-3xl text-slate-400 text-sm">
+                No inquiries received yet. When visitors fill out the "Start a project" form, they will appear here in real-time!
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {localInquiries.map((inq) => {
+                  const rawPhone = inq.phone ? inq.phone.replace(/[^0-9]/g, '') : '';
+                  const clientWhatsAppNumber = rawPhone.length === 10 ? `91${rawPhone}` : rawPhone;
+                  const waChatUrl = rawPhone
+                    ? `https://wa.me/${clientWhatsAppNumber}?text=Hi%20${encodeURIComponent(inq.name)}%2C%20thank%20you%20for%20contacting%20KN%20Builders!%20Regarding%20your%20inquiry%20for%20${encodeURIComponent(inq.needs || 'Project')}...`
+                    : `https://wa.me/916377938441?text=Hi%20${encodeURIComponent(inq.name)}%2C%20regarding%20your%20inquiry...`;
+
+                  return (
+                    <div
+                      key={inq.id}
+                      className="bg-[#0f0f15] border border-[#22222d] rounded-2xl p-5 hover:border-blue-500/40 transition-all space-y-3"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#1f1f28] pb-3">
+                        <div>
+                          <h3 className="font-bold text-base text-white">{inq.name}</h3>
+                          <div className="flex flex-wrap items-center gap-3 mt-1 text-xs">
+                            <a
+                              href={`mailto:${inq.email}`}
+                              className="text-blue-400 hover:underline flex items-center gap-1"
+                            >
+                              <Mail className="w-3.5 h-3.5" />
+                              <span>{inq.email}</span>
+                            </a>
+
+                            {inq.phone ? (
+                              <span className="text-emerald-400 font-semibold flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20">
+                                <Phone className="w-3.5 h-3.5" />
+                                <span>WhatsApp: {inq.phone}</span>
+                              </span>
+                            ) : (
+                              <span className="text-slate-500 text-[11px] italic">
+                                No phone provided
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex sm:flex-col items-center sm:items-end justify-between gap-1">
+                          <span className="text-[11px] px-2.5 py-1 rounded-full bg-blue-600/20 text-blue-400 border border-blue-500/30 font-semibold">
+                            {inq.needs || 'General Inquiry'}
+                          </span>
+                          <span className="text-[10px] text-slate-500 mt-1">{inq.createdAt || 'Recent'}</span>
+                        </div>
+                      </div>
+
+                      {/* Project Idea text */}
+                      <p className="text-xs sm:text-sm text-slate-300 whitespace-pre-wrap leading-relaxed bg-[#0b0b10] p-3 rounded-xl border border-[#1b1b26]">
+                        {inq.idea}
+                      </p>
+
+                      {/* Quick Reply & Delete Action Bar */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={waChatUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-3.5 py-2 rounded-xl bg-[#25D366] hover:bg-[#1fb355] text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-md shadow-green-600/20 transition-all active:scale-95"
+                          >
+                            <WhatsAppLogo className="w-4 h-4" />
+                            <span>{inq.phone ? 'Reply on Client WhatsApp' : 'WhatsApp'}</span>
+                          </a>
+
+                          <a
+                            href={`mailto:${inq.email}?subject=Regarding%20Your%20Project%20Inquiry%20-%20KN%20Builders&body=Hi%20${encodeURIComponent(inq.name)}%2C%0A%0AThank%20you%20for%20contacting%20KN%20Builders.`}
+                            className="px-3.5 py-2 rounded-xl bg-[#1e1e28] hover:bg-[#282838] text-slate-200 border border-[#303040] font-semibold text-xs inline-flex items-center gap-1.5 transition-all"
+                          >
+                            <Mail className="w-3.5 h-3.5 text-blue-400" />
+                            <span>Send Email</span>
+                          </a>
+                        </div>
+
+                        {/* Inquiry Delete Button with custom confirmation */}
+                        <button
+                          onClick={() => setPendingDelete({ type: 'inquiry', id: inq.id, title: `Inquiry from ${inq.name}` })}
+                          title="Delete this inquiry"
+                          className="px-3 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 hover:text-red-300 font-semibold text-xs inline-flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Delete</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}

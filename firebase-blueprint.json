@@ -1,0 +1,81 @@
+{
+  "entities": {
+    "App": {
+      "title": "App",
+      "description": "Mobile and web applications built by KN Builders",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 500 },
+        "logoUrl": { "type": "string", "maxLength": 1000 },
+        "apkUrl": { "type": "string", "maxLength": 1000 },
+        "apkFileName": { "type": "string", "maxLength": 150 },
+        "apkSize": { "type": "string", "maxLength": 50 },
+        "category": { "type": "string", "maxLength": 50 },
+        "version": { "type": "string", "maxLength": 20 },
+        "screenshots": { "type": "string", "maxLength": 3000 },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["title", "description"]
+    },
+    "Website": {
+      "title": "Website",
+      "description": "Websites built and showcased by KN Builders",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 500 },
+        "previewUrl": { "type": "string", "maxLength": 1000 },
+        "liveUrl": { "type": "string", "maxLength": 1000 },
+        "tags": { "type": "string", "maxLength": 150 },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["title", "description"]
+    },
+    "Skill": {
+      "title": "Skill",
+      "description": "Technology or design skill of KN Builders",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "category": { "type": "string", "maxLength": 50 },
+        "iconType": { "type": "string", "maxLength": 50 },
+        "color": { "type": "string", "maxLength": 30 },
+        "order": { "type": "number" }
+      },
+      "required": ["name"]
+    },
+    "Inquiry": {
+      "title": "Inquiry",
+      "description": "Client project contact submission",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 150 },
+        "phone": { "type": "string", "maxLength": 50 },
+        "needs": { "type": "string", "maxLength": 200 },
+        "idea": { "type": "string", "maxLength": 2000 },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["name", "email", "idea"]
+    }
+  },
+  "firestore": {
+    "/apps/{appId}": {
+      "schema": { "$ref": "#/entities/App" },
+      "description": "List of published applications"
+    },
+    "/websites/{websiteId}": {
+      "schema": { "$ref": "#/entities/Website" },
+      "description": "List of published showcase websites"
+    },
+    "/skills/{skillId}": {
+      "schema": { "$ref": "#/entities/Skill" },
+      "description": "Showcase of skills and technologies"
+    },
+    "/inquiries/{inquiryId}": {
+      "schema": { "$ref": "#/entities/Inquiry" },
+      "description": "Customer project inquiries"
+    }
+  }
+}
