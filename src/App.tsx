@@ -18,7 +18,8 @@ import {
   Phone,
   Mail,
   CheckCircle2,
-  Lock
+  Lock,
+  Eye
 } from 'lucide-react';
 import {
   AppItem,
@@ -607,18 +608,6 @@ export default function App() {
                     </button>
                   );
                 })}
-
-                {/* Admin Portal Direct Link */}
-                <button
-                  onClick={navigateToAdmin}
-                  className="w-full text-left px-4 py-3 rounded-2xl text-xs sm:text-sm font-semibold text-slate-400 hover:text-white hover:bg-[#181824] transition-all flex items-center justify-between cursor-pointer mt-3 border border-[#232330]"
-                >
-                  <div className="flex items-center gap-2">
-                    <Lock className="w-4 h-4 text-blue-400" />
-                    <span>Admin Panel (PIN: 2026)</span>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-slate-500" />
-                </button>
               </nav>
             </div>
 
@@ -823,10 +812,10 @@ export default function App() {
                         </span>
                         <button
                           onClick={() => navigateToApp(app)}
-                          className="px-3.5 py-2 rounded-xl bg-[#171724] hover:bg-blue-600 border border-[#2a2a3c] hover:border-blue-500 text-xs font-semibold text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                          className="px-4 py-2 rounded-xl bg-blue-600/15 hover:bg-blue-600 border border-blue-500/30 hover:border-blue-500 text-xs font-bold text-blue-400 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
                         >
-                          <Download className="w-3.5 h-3.5 text-blue-400 group-hover:text-white" />
-                          <span>Download App</span>
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>View App</span>
                         </button>
                       </div>
                     </div>
@@ -1117,16 +1106,10 @@ export default function App() {
         </div>
 
         {/* ===================== FOOTER ===================== */}
-        <footer className="text-center pt-16 pb-8 border-t border-[#181822] mt-16 flex flex-col items-center justify-center gap-2">
+        <footer className="text-center pt-16 pb-8 border-t border-[#181822] mt-16 flex flex-col items-center justify-center">
           <p className="text-xs sm:text-sm text-slate-500 font-medium">
             © 2026 KN Builders
           </p>
-          <button
-            onClick={navigateToAdmin}
-            className="text-xs text-slate-600 hover:text-blue-400 transition-colors cursor-pointer"
-          >
-            Admin Login
-          </button>
         </footer>
       </main>
 

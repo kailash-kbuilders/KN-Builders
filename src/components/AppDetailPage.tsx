@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ArrowLeft,
   Download,
@@ -11,9 +11,11 @@ import {
   CheckCircle,
   Shield,
   Smartphone,
-  Calendar,
-  FileCheck,
-  ChevronDown
+  ChevronDown,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  ZoomIn
 } from 'lucide-react';
 import { WhatsAppLogo } from './Icons';
 import { AppItem } from '../firebase';
@@ -39,7 +41,28 @@ export default function AppDetailPage({ app, onBack, whatsappUrl }: AppDetailPag
   const [showInstallGuide, setShowInstallGuide] = useState(false);
   const [downloadToast, setDownloadToast] = useState<string | null>(null);
 
+  // Fullscreen Screenshot Lightbox state
+  const [activeScreenshotIndex, setActiveScreenshotIndex] = useState<number | null>(null);
+
   const screenshotList = parseScreenshots(app.screenshots);
+
+  // Handle keyboard navigation for screenshot lightbox
+  useEffect(() => {
+    if (activeScreenshotIndex === null) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setActiveScreenshotIndex(null);
+      } else if (e.key === 'ArrowRight' && screenshotList.length > 0) {
+        setActiveScreenshotIndex((prev) => (prev !== null ? (prev + 1) % screenshotList.length : 0));
+      } else if (e.key === 'ArrowLeft' && screenshotList.length > 0) {
+        setActiveScreenshotIndex((prev) => (prev !== null ? (prev - 1 + screenshotList.length) % screenshotList.length : 0));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeScreenshotIndex, screenshotList.length]);
 
   const handleShare = () => {
     if (navigator.share) {
@@ -68,6 +91,84 @@ export default function AppDetailPage({ app, onBack, whatsappUrl }: AppDetailPag
 
   return (
     <div className="min-h-screen bg-black text-white selection:bg-blue-600 selection:text-white pb-20">
+      
+      {/* ===================== FULLSCREEN SCREENSHOT LIGHTBOX ===================== */}
+      {activeScreenshotIndex !== null && screenshotList[activeScreenshotIndex] && (
+        <div
+          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-between p-4 sm:p-6 animate-in fade-in duration-200 select-none"
+          onClick={() => setActiveScreenshotIndex(null)}
+        >
+          {/* Top Bar */}
+          <div
+            className="w-full max-w-4xl flex items-center justify-between z-10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-xs sm:text-sm font-bold text-slate-200">
+                {app.title}
+              </span>
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-600/30 text-blue-300 font-semibold border border-blue-500/40">
+                {activeScreenshotIndex + 1} of {screenshotList.length}
+              </span>
+            </div>
+
+            <button
+              onClick={() => setActiveScreenshotIndex(null)}
+              className="w-10 h-10 rounded-full bg-[#1b1c28] hover:bg-[#252636] border border-[#2e2f42] flex items-center justify-center text-slate-300 hover:text-white transition-all cursor-pointer shadow-lg active:scale-95"
+              title="Close (Esc)"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Center Image with Previous / Next Controls */}
+          <div
+            className="relative flex items-center justify-center max-w-full max-h-[82vh] my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Previous Button */}
+            {screenshotList.length > 1 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveScreenshotIndex((prev) => (prev !== null ? (prev - 1 + screenshotList.length) % screenshotList.length : 0));
+                }}
+                className="absolute left-2 sm:-left-16 z-20 w-11 h-11 rounded-full bg-[#111118]/90 hover:bg-[#222232] border border-[#2b2b3e] text-white flex items-center justify-center cursor-pointer shadow-2xl transition-all active:scale-90"
+                title="Previous Screenshot"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+            )}
+
+            {/* Expanded Screenshot Image */}
+            <img
+              src={screenshotList[activeScreenshotIndex]}
+              alt={`${app.title} screenshot ${activeScreenshotIndex + 1}`}
+              className="max-h-[80vh] max-w-[90vw] sm:max-w-[70vw] object-contain rounded-2xl sm:rounded-3xl border border-[#2e2e42] shadow-[0_10px_50px_rgba(0,0,0,0.9)] animate-in zoom-in-95 duration-200"
+            />
+
+            {/* Next Button */}
+            {screenshotList.length > 1 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveScreenshotIndex((prev) => (prev !== null ? (prev + 1) % screenshotList.length : 0));
+                }}
+                className="absolute right-2 sm:-right-16 z-20 w-11 h-11 rounded-full bg-[#111118]/90 hover:bg-[#222232] border border-[#2b2b3e] text-white flex items-center justify-center cursor-pointer shadow-2xl transition-all active:scale-90"
+                title="Next Screenshot"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            )}
+          </div>
+
+          {/* Bottom Hint */}
+          <div className="text-center text-xs text-slate-400 z-10 hidden sm:block">
+            Use Arrow keys or tap anywhere to close
+          </div>
+        </div>
+      )}
+
       {/* Toast Notification */}
       {downloadToast && (
         <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-[#16a34a] text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-2 border border-green-400 text-sm font-semibold animate-pulse">
@@ -177,20 +278,41 @@ export default function AppDetailPage({ app, onBack, whatsappUrl }: AppDetailPag
           </div>
         </div>
 
-        {/* Screenshots Showcase */}
+        {/* Screenshots Showcase (Click to View Full Size) */}
         <div className="space-y-3">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <span>Screenshots ({screenshotList.length > 0 ? screenshotList.length : 'Preview'})</span>
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <span>Screenshots ({screenshotList.length > 0 ? screenshotList.length : 'Preview'})</span>
+            </h2>
+            {screenshotList.length > 0 && (
+              <span className="text-xs text-blue-400 font-semibold flex items-center gap-1">
+                <ZoomIn className="w-3.5 h-3.5" />
+                <span>Tap any image to expand</span>
+              </span>
+            )}
+          </div>
+
           {screenshotList.length > 0 ? (
             <div className="flex gap-4 overflow-x-auto pb-4 pt-1 scrollbar-thin snap-x">
               {screenshotList.map((imgUrl, idx) => (
-                <img
+                <div
                   key={idx}
-                  src={imgUrl}
-                  alt={`${app.title} screenshot ${idx + 1}`}
-                  className="h-72 sm:h-80 w-auto max-w-[240px] object-cover rounded-2xl border border-[#2a2a3c] shadow-xl snap-start shrink-0 hover:scale-[1.02] transition-transform"
-                />
+                  onClick={() => setActiveScreenshotIndex(idx)}
+                  className="relative group rounded-2xl overflow-hidden cursor-pointer snap-start shrink-0 border border-[#2a2a3c] shadow-xl hover:border-blue-500/80 transition-all duration-300 hover:scale-[1.03]"
+                >
+                  <img
+                    src={imgUrl}
+                    alt={`${app.title} screenshot ${idx + 1}`}
+                    className="h-72 sm:h-80 w-auto max-w-[240px] object-cover"
+                  />
+                  {/* Subtle hover overlay indicating click to enlarge */}
+                  <div className="absolute inset-0 bg-blue-600/15 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <div className="px-3 py-1.5 rounded-full bg-black/80 backdrop-blur-sm text-white text-xs font-bold flex items-center gap-1 shadow-lg">
+                      <ZoomIn className="w-3.5 h-3.5 text-blue-400" />
+                      <span>View</span>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           ) : (
