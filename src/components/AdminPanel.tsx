@@ -39,7 +39,9 @@ import {
   ExternalLink,
   Phone,
   Mail,
-  X
+  X,
+  Upload,
+  Image as ImageIcon
 } from 'lucide-react';
 import { getSkillIcon, WhatsAppLogo } from './Icons';
 
@@ -53,6 +55,38 @@ interface AdminPanelProps {
 }
 
 const ADMIN_PASSWORD = '2026';
+
+// Compresses image for healthy Firestore document storage (<100KB per screenshot)
+function compressImage(file: File, maxWidth = 800, quality = 0.75): Promise<string> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve((e.target?.result as string) || '');
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => resolve((e.target?.result as string) || '');
+      img.src = (e.target?.result as string) || '';
+    };
+    reader.onerror = () => resolve('');
+    reader.readAsDataURL(file);
+  });
+}
 
 export default function AdminPanel({
   apps,
@@ -84,7 +118,7 @@ export default function AdminPanel({
   useEffect(() => { setLocalSkills(skills); }, [skills]);
   useEffect(() => { setLocalInquiries(inquiries); }, [inquiries]);
 
-  // Delete Confirmation Modal State (Reliable in all iframe and mobile environments)
+  // Delete Confirmation Modal State
   const [pendingDelete, setPendingDelete] = useState<{
     type: 'app' | 'website' | 'skill' | 'inquiry';
     id: string;
@@ -100,7 +134,7 @@ export default function AdminPanel({
   const [appApkUrl, setAppApkUrl] = useState('');
   const [apkFileName, setApkFileName] = useState('');
   const [apkSize, setApkSize] = useState('18.4 MB');
-  const [appScreenshots, setAppScreenshots] = useState('');
+  const [screenshotsList, setScreenshotsList] = useState<string[]>([]);
   const [editingAppId, setEditingAppId] = useState<string | null>(null);
 
   // Website form state
@@ -130,7 +164,7 @@ export default function AdminPanel({
       sessionStorage.setItem('kn_admin_auth', 'true');
       setAuthError(null);
     } else {
-      setAuthError('Incorrect Password! Please try again.');
+      setAuthError('Incorrect PIN! Please enter 2026.');
     }
   };
 
@@ -152,6 +186,30 @@ export default function AdminPanel({
     }
   };
 
+  // Multi-file Screenshot Uploader
+  const handleScreenshotsUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setIsSubmitting(true);
+    showToast('Compressing and uploading screenshots...');
+
+    const newScreenshots: string[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const compressed = await compressImage(files[i]);
+      if (compressed) {
+        newScreenshots.push(compressed);
+      }
+    }
+
+    setScreenshotsList((prev) => [...prev, ...newScreenshots]);
+    setIsSubmitting(false);
+    showToast(`${newScreenshots.length} screenshot(s) added!`);
+  };
+
+  const handleRemoveScreenshot = (indexToRemove: number) => {
+    setScreenshotsList((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
   // Save / Update App
   const handleSaveApp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,7 +225,7 @@ export default function AdminPanel({
         apkUrl: appApkUrl.trim() || '#',
         apkFileName: apkFileName.trim() || `${appTitle.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_v1.apk`,
         apkSize: apkSize.trim() || '15 MB',
-        screenshots: appScreenshots.trim(),
+        screenshots: JSON.stringify(screenshotsList),
         createdAt: new Date().toLocaleDateString()
       };
 
@@ -184,7 +242,7 @@ export default function AdminPanel({
       setAppLogoUrl('');
       setAppApkUrl('');
       setApkFileName('');
-      setAppScreenshots('');
+      setScreenshotsList([]);
       setEditingAppId(null);
       onRefresh();
     } catch (err) {
@@ -265,7 +323,7 @@ export default function AdminPanel({
     }
   };
 
-  // Execute confirmed deletion without relying on blocked window.confirm
+  // Execute confirmed deletion
   const executeDelete = async () => {
     if (!pendingDelete) return;
     const { type, id, title } = pendingDelete;
@@ -318,7 +376,7 @@ export default function AdminPanel({
     }
   };
 
-  // PASSWORD GATE: If not authenticated, require PIN "2026"
+  // PASSWORD GATE: PIN "2026"
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
@@ -329,7 +387,7 @@ export default function AdminPanel({
 
           <div>
             <h2 className="text-2xl font-black tracking-tight text-white">KN Builders Admin</h2>
-            <p className="text-xs text-slate-400 mt-1">Enter Admin PIN to manage apps, websites, skills & inquiries</p>
+            <p className="text-xs text-slate-400 mt-1">Enter PIN (2026) to manage apps, websites, skills & inquiries</p>
           </div>
 
           {authError && (
@@ -350,7 +408,7 @@ export default function AdminPanel({
                   setPasswordInput(e.target.value);
                   setAuthError(null);
                 }}
-                placeholder="Enter Admin PIN"
+                placeholder="PIN: 2026"
                 className="w-full bg-[#161622] border border-[#2a2a3a] rounded-2xl pl-11 pr-4 py-3.5 text-center text-lg font-bold tracking-widest text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
               />
             </div>
@@ -620,17 +678,51 @@ export default function AdminPanel({
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Screenshot URLs (comma separated)
+                {/* Direct Screenshot Upload */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-semibold text-slate-300">
+                      App Screenshots (Upload Images)
+                    </label>
+                    <span className="text-[11px] text-blue-400 font-medium">
+                      {screenshotsList.length} Uploaded
+                    </span>
+                  </div>
+
+                  <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-[#2d2d3e] hover:border-blue-500/60 rounded-2xl cursor-pointer bg-[#14141e] hover:bg-[#181826] transition-all text-center">
+                    <Upload className="w-5 h-5 text-blue-400 mb-1" />
+                    <span className="text-xs font-bold text-white">Click to Upload Screenshots</span>
+                    <span className="text-[10px] text-slate-400 mt-0.5">Select multiple images from your phone or PC</span>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleScreenshotsUpload}
+                      className="hidden"
+                    />
                   </label>
-                  <input
-                    type="text"
-                    value={appScreenshots}
-                    onChange={(e) => setAppScreenshots(e.target.value)}
-                    placeholder="https://img1.jpg, https://img2.jpg"
-                    className="w-full bg-[#181820] border border-[#2c2c38] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
-                  />
+
+                  {/* Screenshots Preview Gallery with Remove option */}
+                  {screenshotsList.length > 0 && (
+                    <div className="flex gap-2.5 overflow-x-auto pt-2 pb-1 scrollbar-thin">
+                      {screenshotsList.map((src, idx) => (
+                        <div
+                          key={idx}
+                          className="relative w-16 h-24 rounded-xl border border-[#2c2c3e] overflow-hidden shrink-0 group shadow-md"
+                        >
+                          <img src={src} alt="screenshot" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveScreenshot(idx)}
+                            className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center cursor-pointer shadow hover:bg-red-500 transition-colors"
+                            title="Remove Screenshot"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <button
@@ -687,7 +779,15 @@ export default function AdminPanel({
                               setAppApkUrl(app.apkUrl || '');
                               setApkFileName(app.apkFileName || '');
                               setApkSize(app.apkSize || '15 MB');
-                              setAppScreenshots(app.screenshots || '');
+
+                              // Parse screenshots
+                              try {
+                                const parsed = JSON.parse(app.screenshots || '[]');
+                                if (Array.isArray(parsed)) setScreenshotsList(parsed);
+                                else setScreenshotsList(app.screenshots ? app.screenshots.split(',').map((s) => s.trim()).filter(Boolean) : []);
+                              } catch (e) {
+                                setScreenshotsList(app.screenshots ? app.screenshots.split(',').map((s) => s.trim()).filter(Boolean) : []);
+                              }
                             }}
                             className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
                             title="Edit App"
@@ -1010,12 +1110,10 @@ export default function AdminPanel({
                         </div>
                       </div>
 
-                      {/* Project Idea text */}
                       <p className="text-xs sm:text-sm text-slate-300 whitespace-pre-wrap leading-relaxed bg-[#0b0b10] p-3 rounded-xl border border-[#1b1b26]">
                         {inq.idea}
                       </p>
 
-                      {/* Quick Reply & Delete Action Bar */}
                       <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                         <div className="flex items-center gap-2">
                           <a
@@ -1037,7 +1135,6 @@ export default function AdminPanel({
                           </a>
                         </div>
 
-                        {/* Inquiry Delete Button with custom confirmation */}
                         <button
                           onClick={() => setPendingDelete({ type: 'inquiry', id: inq.id, title: `Inquiry from ${inq.name}` })}
                           title="Delete this inquiry"
