@@ -41,10 +41,9 @@ import {
   Mail,
   X,
   Upload,
-  Image as ImageIcon,
   ArrowUp
 } from 'lucide-react';
-import { getSkillIcon, WhatsAppLogo } from './Icons';
+import { getSkillIcon, WhatsAppLogo, AndroidLogo, WindowsLogo, AppleLogo } from './Icons';
 
 interface AdminPanelProps {
   apps: AppItem[];
@@ -161,7 +160,18 @@ export default function AdminPanel({
   const [apkFileName, setApkFileName] = useState('');
   const [apkSize, setApkSize] = useState('18.4 MB');
   const [screenshotsList, setScreenshotsList] = useState<string[]>([]);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['android']);
   const [editingAppId, setEditingAppId] = useState<string | null>(null);
+
+  const togglePlatform = (p: string) => {
+    if (selectedPlatforms.includes(p)) {
+      if (selectedPlatforms.length > 1) {
+        setSelectedPlatforms(selectedPlatforms.filter((x) => x !== p));
+      }
+    } else {
+      setSelectedPlatforms([...selectedPlatforms, p]);
+    }
+  };
 
   // Website form state
   const [webTitle, setWebTitle] = useState('');
@@ -252,6 +262,7 @@ export default function AdminPanel({
         apkFileName: apkFileName.trim() || `${appTitle.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_v1.apk`,
         apkSize: apkSize.trim() || '15 MB',
         screenshots: JSON.stringify(screenshotsList),
+        platforms: selectedPlatforms,
         createdAt: new Date().toLocaleDateString(),
         createdAtTimestamp: Date.now()
       };
@@ -270,6 +281,7 @@ export default function AdminPanel({
       setAppApkUrl('');
       setApkFileName('');
       setScreenshotsList([]);
+      setSelectedPlatforms(['android']);
       setEditingAppId(null);
       onRefresh();
     } catch (err) {
@@ -724,6 +736,74 @@ export default function AdminPanel({
                   </div>
                 </div>
 
+                {/* Supported Platforms (Real Android, Windows, Apple Logos) */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-slate-300">
+                      Supported Platforms *
+                    </label>
+                    <span className="text-[10px] text-slate-400 font-medium">Select all that apply</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2.5">
+                    {/* Android */}
+                    <button
+                      type="button"
+                      onClick={() => togglePlatform('android')}
+                      className={`relative p-3 rounded-2xl border flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                        selectedPlatforms.includes('android')
+                          ? 'bg-emerald-950/70 border-emerald-500 text-emerald-400 shadow-md shadow-emerald-500/30 ring-2 ring-emerald-500/50'
+                          : 'bg-[#14141e] border-[#29293a] text-slate-400 hover:border-slate-500'
+                      }`}
+                    >
+                      {selectedPlatforms.includes('android') && (
+                        <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-emerald-500 text-black flex items-center justify-center text-[10px] font-black">
+                          ✓
+                        </span>
+                      )}
+                      <AndroidLogo className="w-6 h-6 shrink-0" />
+                      <span className="text-xs font-bold text-white">Android</span>
+                    </button>
+
+                    {/* Windows */}
+                    <button
+                      type="button"
+                      onClick={() => togglePlatform('windows')}
+                      className={`relative p-3 rounded-2xl border flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                        selectedPlatforms.includes('windows')
+                          ? 'bg-blue-950/70 border-[#0078D4] text-[#38bdf8] shadow-md shadow-blue-500/30 ring-2 ring-[#0078D4]/50'
+                          : 'bg-[#14141e] border-[#29293a] text-slate-400 hover:border-slate-500'
+                      }`}
+                    >
+                      {selectedPlatforms.includes('windows') && (
+                        <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#0078D4] text-white flex items-center justify-center text-[10px] font-black">
+                          ✓
+                        </span>
+                      )}
+                      <WindowsLogo className="w-6 h-6 shrink-0" />
+                      <span className="text-xs font-bold text-white">Windows</span>
+                    </button>
+
+                    {/* Apple */}
+                    <button
+                      type="button"
+                      onClick={() => togglePlatform('apple')}
+                      className={`relative p-3 rounded-2xl border flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                        selectedPlatforms.includes('apple')
+                          ? 'bg-slate-850 border-slate-300 text-white shadow-md shadow-white/20 ring-2 ring-slate-300/50'
+                          : 'bg-[#14141e] border-[#29293a] text-slate-400 hover:border-slate-500'
+                      }`}
+                    >
+                      {selectedPlatforms.includes('apple') && (
+                        <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-white text-black flex items-center justify-center text-[10px] font-black">
+                          ✓
+                        </span>
+                      )}
+                      <AppleLogo className="w-6 h-6 shrink-0" />
+                      <span className="text-xs font-bold text-white">Apple</span>
+                    </button>
+                  </div>
+                </div>
+
                 {/* Direct Screenshot Upload */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -805,6 +885,17 @@ export default function AdminPanel({
                           <h3 className="font-bold text-sm text-white truncate">{app.title}</h3>
                           <span className="text-[11px] text-blue-400 font-semibold block">{app.category || 'Android App'}</span>
                           <span className="text-[10px] text-slate-400">{app.version || 'v1.0.0'} • {app.apkSize || '15 MB'}</span>
+                          
+                          {/* Real Official Platform Badges */}
+                          <div className="flex items-center gap-1 mt-1.5">
+                            {(app.platforms && app.platforms.length > 0 ? app.platforms : ['android']).map((plat) => (
+                              <span key={plat} className="p-1 rounded-md bg-[#181826] border border-[#27273a] inline-flex items-center" title={plat}>
+                                {plat === 'android' && <AndroidLogo className="w-3.5 h-3.5" />}
+                                {plat === 'windows' && <WindowsLogo className="w-3.5 h-3.5" />}
+                                {plat === 'apple' && <AppleLogo className="w-3.5 h-3.5" />}
+                              </span>
+                            ))}
+                          </div>
                         </div>
                       </div>
 
@@ -825,6 +916,7 @@ export default function AdminPanel({
                               setAppApkUrl(app.apkUrl || '');
                               setApkFileName(app.apkFileName || '');
                               setApkSize(app.apkSize || '15 MB');
+                              setSelectedPlatforms(app.platforms && Array.isArray(app.platforms) && app.platforms.length > 0 ? app.platforms : ['android']);
 
                               // Parse screenshots
                               try {

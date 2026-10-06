@@ -48,6 +48,7 @@ export interface AppItem {
   downloadsCount?: number;
   createdAt: string;
   createdAtTimestamp?: number;
+  platforms?: string[];
 }
 
 export interface WebsiteItem {
@@ -104,7 +105,8 @@ export const DEFAULT_APPS: AppItem[] = [
     apkSize: '18.4 MB',
     category: 'Health & Fitness',
     version: 'v1.0.0',
-    createdAt: '2026-10-04'
+    createdAt: '2026-10-04',
+    platforms: ['android']
   }
 ];
 

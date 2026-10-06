@@ -5,6 +5,7 @@
     scroll-behavior: smooth;
     overflow-x: hidden;
     background-color: #000000;
+    cursor: default;
   }
 
   body {
@@ -14,34 +15,51 @@
     background-color: #000000;
     color: #ffffff;
     overflow-x: hidden;
-    overflow-y: auto;
     min-height: 100vh;
+    cursor: default;
   }
 }
 
 /* ==========================================================================
-   SINGLE GLOBAL SCROLLBAR (Fixes dual scrollbars on desktop)
-   Only html & body get the custom scrollbar thumb
+   DEFAULT CLEAN CURSORS (Standard arrow, NOT scroller or grab)
    ========================================================================== */
-html::-webkit-scrollbar,
-body::-webkit-scrollbar {
+html, body, div, section, article, p, span, h1, h2, h3, h4 {
+  cursor: default;
+}
+
+button, a, [role="button"], input[type="submit"], input[type="button"], select {
+  cursor: pointer;
+}
+
+input[type="text"], input[type="email"], input[type="tel"], textarea {
+  cursor: text;
+}
+
+/* Prevent image ghost dragging that triggers scroller / move cursor */
+img {
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+/* ==========================================================================
+   SINGLE GLOBAL SCROLLBAR (Fixes dual scrollbars on desktop)
+   Only html gets the custom scrollbar thumb
+   ========================================================================== */
+html::-webkit-scrollbar {
   width: 8px;
 }
 
-html::-webkit-scrollbar-track,
-body::-webkit-scrollbar-track {
+html::-webkit-scrollbar-track {
   background: #09090d;
 }
 
-html::-webkit-scrollbar-thumb,
-body::-webkit-scrollbar-thumb {
+html::-webkit-scrollbar-thumb {
   background: #252636;
   border-radius: 9999px;
   border: 2px solid #09090d;
 }
 
-html::-webkit-scrollbar-thumb:hover,
-body::-webkit-scrollbar-thumb:hover {
+html::-webkit-scrollbar-thumb:hover {
   background: #3b82f6;
 }
 
@@ -57,13 +75,13 @@ body::-webkit-scrollbar-thumb:hover {
 }
 
 /* ==========================================================================
-   SMOOTH SLIDE-IN FROM RIGHT ANIMATIONS
-   Works 100% reliably in development and on hosted production (Vercel)
+   SMOOTH ON-SCROLL SLIDE-IN FROM RIGHT ANIMATIONS
+   Reveals strictly when each element enters the viewport as user scrolls
    ========================================================================== */
 .slide-right-enter {
   opacity: 0;
-  transform: translateX(45px);
-  transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateX(36px);
+  transition: opacity 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
   will-change: opacity, transform;
 }
 
@@ -73,27 +91,33 @@ body::-webkit-scrollbar-thumb:hover {
 }
 
 /* Stagger delay helpers for child elements (cards, badges, buttons) */
-.delay-75 { transition-delay: 75ms; }
-.delay-150 { transition-delay: 150ms; }
-.delay-225 { transition-delay: 225ms; }
-.delay-300 { transition-delay: 300ms; }
-.delay-375 { transition-delay: 375ms; }
-.delay-450 { transition-delay: 450ms; }
+.delay-75 { transition-delay: 60ms; }
+.delay-150 { transition-delay: 120ms; }
+.delay-225 { transition-delay: 180ms; }
+.delay-300 { transition-delay: 240ms; }
+.delay-375 { transition-delay: 300ms; }
+.delay-450 { transition-delay: 360ms; }
 
 /* ==========================================================================
-   INTERACTIVE MOUSE HOVER OVER-EFFECTS
-   Smooth lift, luminous glow and responsive cursor feel
+   CLEAN SUBTLE CARD HOVER (Standard desktop hover, no touch stickiness)
    ========================================================================== */
-.mouse-hover-card {
-  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-              background-color 0.28s ease;
-  will-change: transform, box-shadow;
+@media (hover: hover) and (pointer: fine) {
+  .mouse-hover-card {
+    transition: border-color 0.25s ease, background-color 0.25s ease;
+  }
+
+  .mouse-hover-card:hover {
+    border-color: rgba(96, 165, 250, 0.45);
+  }
 }
 
-.mouse-hover-card:hover {
-  transform: translateY(-5px) scale(1.02);
-  border-color: rgba(96, 165, 250, 0.7);
-  box-shadow: 0 10px 30px -10px rgba(59, 130, 246, 0.4), 0 0 20px rgba(59, 130, 246, 0.2);
+@media (hover: none), (pointer: coarse) {
+  .mouse-hover-card {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent !important;
+  }
 }

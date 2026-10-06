@@ -41,7 +41,7 @@ import {
   setDoc,
   doc
 } from 'firebase/firestore';
-import { WhatsAppLogo, EmailEnvelopeIcon, getSkillIcon } from './components/Icons';
+import { WhatsAppLogo, EmailEnvelopeIcon, getSkillIcon, AndroidLogo, WindowsLogo, AppleLogo } from './components/Icons';
 import AdminPanel from './components/AdminPanel';
 import AppDetailPage from './components/AppDetailPage';
 
@@ -115,16 +115,6 @@ export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const [activeSection, setActiveSection] = useState<string>('home');
 
-  // Interactive Mouse Cursor Follower Spotlight Position
-  const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: -1000, y: -1000 });
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePos({ x: e.clientX, y: e.clientY });
-    };
-    window.addEventListener('mousemove', handleMouseMove, { passive: true });
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
 
   // Firestore synced state with cache & deduplication
   const [apps, setApps] = useState<AppItem[]>(() => {
@@ -166,52 +156,91 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-  // Form State
-  const [name, setName] = useState<string>('Alex');
-  const [email, setEmail] = useState<string>('');
-  const [phone, setPhone] = useState<string>('');
-  const [selectedNeeds, setSelectedNeeds] = useState<string[]>(['Android App']);
-  const [idea, setIdea] = useState<string>('');
+  // Form State (Persisted in localStorage so user's typed message is NEVER lost on scroll or reload)
+  const [name, setName] = useState<string>(() => {
+    return localStorage.getItem('kn_inquiry_name') || 'Alex';
+  });
+  const [email, setEmail] = useState<string>(() => {
+    return localStorage.getItem('kn_inquiry_email') || '';
+  });
+  const [phone, setPhone] = useState<string>(() => {
+    return localStorage.getItem('kn_inquiry_phone') || '';
+  });
+  const [selectedNeeds, setSelectedNeeds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('kn_inquiry_needs');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return ['Android App'];
+  });
+  const [idea, setIdea] = useState<string>(() => {
+    return localStorage.getItem('kn_inquiry_idea') || '';
+  });
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
   const [isSavingInquiry, setIsSavingInquiry] = useState<boolean>(false);
 
-  // Slide-in From Right Animation Trigger (100% Reliable after hosting on Vercel)
+  // Sync form inputs to state and localStorage
+  const handleNameChange = (val: string) => {
+    setName(val);
+    localStorage.setItem('kn_inquiry_name', val);
+  };
+  const handleEmailChange = (val: string) => {
+    setEmail(val);
+    localStorage.setItem('kn_inquiry_email', val);
+  };
+  const handlePhoneChange = (val: string) => {
+    setPhone(val);
+    localStorage.setItem('kn_inquiry_phone', val);
+  };
+  const handleIdeaChange = (val: string) => {
+    setIdea(val);
+    localStorage.setItem('kn_inquiry_idea', val);
+  };
+
+  // Reversible On-Scroll Slide-in From Right Animation Trigger
+  // Triggers every time elements enter viewport (scrolling down or scrolling back up!)
+  // Preserves form input state & messages safely
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             entry.target.classList.add('revealed');
+          } else {
+            // If user scrolled away, reset class so returning triggers slide-in again.
+            // Do NOT remove revealed if an active input inside is currently focused.
+            if (document.activeElement && entry.target.contains(document.activeElement)) {
+              return;
+            }
+            entry.target.classList.remove('revealed');
           }
         });
       },
-      { rootMargin: '0px 0px -40px 0px', threshold: 0.08 }
+      {
+        root: null,
+        rootMargin: '20px 0px 20px 0px',
+        threshold: 0.08
+      }
     );
 
-    const observeAll = () => {
+    const observeElements = () => {
       const elements = document.querySelectorAll('.slide-right-enter');
       elements.forEach((el) => observer.observe(el));
-
-      // Trigger elements currently in viewport right away with smooth entry
-      elements.forEach((el) => {
-        const rect = el.getBoundingClientRect();
-        if (rect.top < window.innerHeight * 0.95) {
-          el.classList.add('revealed');
-        }
-      });
     };
 
-    observeAll();
-    const timer = setTimeout(observeAll, 120);
-    // Absolute fallback: ensure everything is visible even if browser delays
-    const fallbackTimer = setTimeout(() => {
-      document.querySelectorAll('.slide-right-enter').forEach((el) => el.classList.add('revealed'));
-    }, 1200);
+    observeElements();
+    const t1 = setTimeout(observeElements, 120);
+    const t2 = setTimeout(observeElements, 400);
 
     return () => {
       observer.disconnect();
-      clearTimeout(timer);
-      clearTimeout(fallbackTimer);
+      clearTimeout(t1);
+      clearTimeout(t2);
     };
   }, [apps, websites, skills, activeAppSlug, isAdminView]);
 
@@ -449,11 +478,14 @@ export default function App() {
   };
 
   const toggleNeed = (item: string) => {
+    let next: string[];
     if (selectedNeeds.includes(item)) {
-      setSelectedNeeds(selectedNeeds.filter((n) => n !== item));
+      next = selectedNeeds.filter((n) => n !== item);
     } else {
-      setSelectedNeeds([...selectedNeeds, item]);
+      next = [...selectedNeeds, item];
     }
+    setSelectedNeeds(next);
+    localStorage.setItem('kn_inquiry_needs', JSON.stringify(next));
   };
 
   const scrollToSection = (id: string) => {
@@ -496,6 +528,8 @@ export default function App() {
         idea: idea.trim(),
         createdAt: new Date().toLocaleDateString()
       });
+      localStorage.removeItem('kn_inquiry_idea');
+      setIdea('');
       setIsSubmitted(true);
     } catch (err) {
       console.error('Failed to submit inquiry:', err);
@@ -566,16 +600,8 @@ export default function App() {
   return (
     <div className="min-h-screen bg-black text-white selection:bg-blue-600 selection:text-white relative">
       
-      {/* Interactive Ambient Mouse Spotlight Glow on Background */}
-      <div
-        className="pointer-events-none fixed inset-0 z-20 transition-opacity duration-300 opacity-70 hidden md:block"
-        style={{
-          background: `radial-gradient(650px circle at ${mousePos.x}px ${mousePos.y}px, rgba(59, 130, 246, 0.08), transparent 80%)`
-        }}
-      />
-
-      {/* ===================== ELEVATED DISTINCT TOP BAR ===================== */}
-      <header className="sticky top-0 z-40 bg-[#121217]/95 border-b border-[#20212b] px-4 sm:px-8 py-3.5 backdrop-blur-md shadow-lg shadow-black/40">
+      {/* ===================== FIXED DISTINCT TOP BAR (NEVER SCROLLS AWAY) ===================== */}
+      <header className="fixed top-0 left-0 right-0 z-40 bg-[#0c0c11]/95 border-b border-[#1f202b] px-4 sm:px-8 py-3.5 backdrop-blur-md shadow-lg shadow-black/50">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           
           {/* Brand Logo */}
@@ -688,7 +714,7 @@ export default function App() {
       )}
 
       {/* ===================== MAIN CONTENT CONTAINER (SINGLE UNIFIED SCROLLBAR) ===================== */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 pb-12">
         <div className="md:grid md:grid-cols-12 md:gap-8 lg:gap-12 items-start">
           
           {/* ==================== LEFT COLUMN ==================== */}
@@ -771,7 +797,7 @@ export default function App() {
                 {skills.map((skill, index) => (
                   <div
                     key={skill.id}
-                    className={`p-4 rounded-2xl bg-[#0e0e14] border border-[#20202c] flex items-center gap-3 cursor-pointer group select-none slide-right-enter delay-${(index % 4) * 75 + 75} mouse-hover-card`}
+                    className={`p-4 rounded-2xl bg-[#0e0e14] border border-[#20202c] flex items-center gap-3 group select-none slide-right-enter delay-${(index % 4) * 75 + 75} mouse-hover-card`}
                   >
                     <div className="w-11 h-11 rounded-xl bg-[#161622] border border-[#262636] group-hover:border-blue-500/60 flex items-center justify-center shrink-0 transition-colors">
                       {getSkillIcon(skill.iconType, 'w-5 h-5')}
@@ -860,15 +886,32 @@ export default function App() {
                       </div>
 
                       <div className="mt-4 pt-3.5 border-t border-[#1e1e28] flex items-center justify-between gap-2">
-                        <span className="text-[11px] text-slate-500 font-medium truncate max-w-[130px]">
-                          {app.apkSize || '15 MB'} • Android App
-                        </span>
+                        <div className="flex items-center gap-1.5 overflow-hidden">
+                          <span className="text-[11px] text-slate-500 font-medium shrink-0">
+                            {app.apkSize || '15 MB'}
+                          </span>
+                          <span className="text-slate-700 text-[10px]">•</span>
+                          {/* Real platform logos */}
+                          <div className="flex items-center gap-1">
+                            {(app.platforms && app.platforms.length > 0 ? app.platforms : ['android']).map((plat) => (
+                              <span
+                                key={plat}
+                                title={plat === 'android' ? 'Android' : plat === 'windows' ? 'Windows' : 'Apple'}
+                                className="p-1 rounded-md bg-[#161622] border border-[#272738] inline-flex items-center justify-center shadow-sm"
+                              >
+                                {plat === 'android' && <AndroidLogo className="w-3 h-3" />}
+                                {plat === 'windows' && <WindowsLogo className="w-3 h-3" />}
+                                {plat === 'apple' && <AppleLogo className="w-3 h-3" />}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             navigateToApp(app);
                           }}
-                          className="px-4 py-2 rounded-xl bg-blue-600/15 hover:bg-blue-600 border border-blue-500/30 hover:border-blue-500 text-xs font-bold text-blue-400 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                          className="px-4 py-2 rounded-xl bg-blue-600/15 hover:bg-blue-600 border border-blue-500/30 hover:border-blue-500 text-xs font-bold text-blue-400 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 shrink-0"
                         >
                           <Eye className="w-3.5 h-3.5" />
                           <span>View App</span>
@@ -945,7 +988,7 @@ export default function App() {
                 {steps.map((step, index) => (
                   <div
                     key={step.num}
-                    className={`rounded-2xl p-4.5 flex items-center gap-4 bg-[#0d0d12] border border-[#1f1f2c] cursor-pointer slide-right-enter delay-${index * 75 + 75} mouse-hover-card`}
+                    className={`rounded-2xl p-4.5 flex items-center gap-4 bg-[#0d0d12] border border-[#1f1f2c] slide-right-enter delay-${index * 75 + 75} mouse-hover-card`}
                   >
                     <div className="w-9 h-9 rounded-full bg-[#2563eb] text-white font-extrabold text-sm flex items-center justify-center shrink-0 shadow-md shadow-blue-600/30">
                       {step.num}
@@ -1057,7 +1100,7 @@ export default function App() {
                         type="text"
                         required
                         value={name}
-                        onChange={(e) => setName(e.target.value)}
+                        onChange={(e) => handleNameChange(e.target.value)}
                         placeholder="Alex"
                         className="w-full rounded-2xl px-4 py-3.5 text-sm bg-[#09090e] border border-[#222230] text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
                       />
@@ -1073,7 +1116,7 @@ export default function App() {
                         type="email"
                         required
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={(e) => handleEmailChange(e.target.value)}
                         placeholder="alex@example.com"
                         className="w-full rounded-2xl px-4 py-3.5 text-sm bg-[#09090e] border border-[#222230] text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
                       />
@@ -1093,7 +1136,7 @@ export default function App() {
                           id="phone"
                           type="tel"
                           value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
+                          onChange={(e) => handlePhoneChange(e.target.value)}
                           placeholder="e.g. 6377938441 or +91 9876543210"
                           className="w-full rounded-2xl pl-11 pr-4 py-3.5 text-sm bg-[#09090e] border border-[#222230] text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
                         />
@@ -1138,7 +1181,7 @@ export default function App() {
                         rows={4}
                         required
                         value={idea}
-                        onChange={(e) => setIdea(e.target.value)}
+                        onChange={(e) => handleIdeaChange(e.target.value)}
                         placeholder="Describe your app or website..."
                         className="w-full rounded-2xl px-4 py-3.5 text-sm bg-[#09090e] border border-[#222230] text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 resize-none transition-colors"
                       />

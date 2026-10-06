@@ -17,7 +17,7 @@ import {
   ChevronRight,
   ZoomIn
 } from 'lucide-react';
-import { WhatsAppLogo } from './Icons';
+import { WhatsAppLogo, AndroidLogo, WindowsLogo, AppleLogo } from './Icons';
 import { AppItem } from '../firebase';
 
 interface AppDetailPageProps {
@@ -234,6 +234,22 @@ export default function AppDetailPage({ app, onBack, whatsappUrl }: AppDetailPag
                 Developed & Maintained by <span className="text-blue-400 font-bold">KN Builders</span>
               </p>
 
+              {/* Supported Platforms (Real Android, Windows, Apple Logos) */}
+              <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                <span className="text-xs font-semibold text-slate-400 mr-1">Available on:</span>
+                {(app.platforms && app.platforms.length > 0 ? app.platforms : ['android']).map((plat) => (
+                  <div
+                    key={plat}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#14141f] border border-[#272738] text-xs font-bold text-white shadow-sm"
+                  >
+                    {plat === 'android' && <AndroidLogo className="w-4 h-4 shrink-0" />}
+                    {plat === 'windows' && <WindowsLogo className="w-4 h-4 shrink-0" />}
+                    {plat === 'apple' && <AppleLogo className="w-4 h-4 shrink-0" />}
+                    <span>{plat === 'android' ? 'Android' : plat === 'windows' ? 'Windows' : 'Apple / iOS'}</span>
+                  </div>
+                ))}
+              </div>
+
               {/* Action Buttons: Download App & WhatsApp Support */}
               <div className="pt-4 flex flex-col sm:flex-row items-center gap-3">
                 <button
@@ -268,8 +284,10 @@ export default function AppDetailPage({ app, onBack, whatsappUrl }: AppDetailPag
               <p className="text-sm font-bold text-white">{app.version || 'v1.0.0'}</p>
             </div>
             <div className="space-y-1">
-              <span className="text-xs text-slate-400">OS Required</span>
-              <p className="text-sm font-bold text-white">Android 8.0+</p>
+              <span className="text-xs text-slate-400">Platforms</span>
+              <p className="text-xs sm:text-sm font-bold text-white capitalize">
+                {(app.platforms && app.platforms.length > 0 ? app.platforms : ['Android']).join(', ')}
+              </p>
             </div>
             <div className="space-y-1">
               <span className="text-xs text-slate-400">Release Date</span>
@@ -347,6 +365,79 @@ export default function AppDetailPage({ app, onBack, whatsappUrl }: AppDetailPag
           <div className="pt-2 border-t border-[#1f1f2c] flex items-center justify-between text-xs text-slate-400">
             <span>Package Name:</span>
             <span className="font-mono text-slate-200">{app.apkFileName || `${app.title.toLowerCase().replace(/\s+/g, '.')}.apk`}</span>
+          </div>
+        </div>
+
+        {/* ===================== SUPPORTED PLATFORMS (REAL LOGOS) ===================== */}
+        <div className="p-6 rounded-3xl bg-[#0e0e15] border border-[#20202c] space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-white">Supported Platforms</h2>
+            <span className="text-xs text-blue-400 font-semibold">Verified Device Compatibility</span>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Android Card */}
+            <div
+              className={`p-4 rounded-2xl border flex items-center gap-3.5 transition-all ${
+                (app.platforms && app.platforms.includes('android')) || (!app.platforms || app.platforms.length === 0)
+                  ? 'bg-emerald-950/40 border-emerald-500/50 text-white shadow-sm'
+                  : 'bg-[#121218] border-[#22222e] text-slate-500 opacity-60'
+              }`}
+            >
+              <div className="w-11 h-11 rounded-xl bg-[#16271c] border border-emerald-500/30 flex items-center justify-center shrink-0">
+                <AndroidLogo className="w-6 h-6 shrink-0" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">Android</h4>
+                <p className="text-[11px] text-slate-400">
+                  {(app.platforms && app.platforms.includes('android')) || (!app.platforms || app.platforms.length === 0)
+                    ? 'Supported (APK / Mobile)'
+                    : 'Not supported'}
+                </p>
+              </div>
+            </div>
+
+            {/* Windows Card */}
+            <div
+              className={`p-4 rounded-2xl border flex items-center gap-3.5 transition-all ${
+                app.platforms?.includes('windows')
+                  ? 'bg-blue-950/40 border-blue-500/50 text-white shadow-sm'
+                  : 'bg-[#121218] border-[#22222e] text-slate-500 opacity-60'
+              }`}
+            >
+              <div className="w-11 h-11 rounded-xl bg-[#0f2338] border border-blue-500/30 flex items-center justify-center shrink-0">
+                <WindowsLogo className="w-6 h-6 shrink-0" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">Windows</h4>
+                <p className="text-[11px] text-slate-400">
+                  {app.platforms?.includes('windows')
+                    ? 'Supported (PC / Desktop)'
+                    : 'Not supported'}
+                </p>
+              </div>
+            </div>
+
+            {/* Apple Card */}
+            <div
+              className={`p-4 rounded-2xl border flex items-center gap-3.5 transition-all ${
+                app.platforms?.includes('apple')
+                  ? 'bg-slate-850/60 border-slate-400/50 text-white shadow-sm'
+                  : 'bg-[#121218] border-[#22222e] text-slate-500 opacity-60'
+              }`}
+            >
+              <div className="w-11 h-11 rounded-xl bg-[#1c1c24] border border-slate-600 flex items-center justify-center shrink-0">
+                <AppleLogo className="w-6 h-6 shrink-0" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">Apple</h4>
+                <p className="text-[11px] text-slate-400">
+                  {app.platforms?.includes('apple')
+                    ? 'Supported (iOS / Mac)'
+                    : 'Not supported'}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
