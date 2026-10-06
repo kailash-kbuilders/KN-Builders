@@ -47,6 +47,7 @@ export interface AppItem {
   screenshots?: string;
   downloadsCount?: number;
   createdAt: string;
+  createdAtTimestamp?: number;
 }
 
 export interface WebsiteItem {

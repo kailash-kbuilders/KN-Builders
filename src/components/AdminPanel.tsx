@@ -41,7 +41,8 @@ import {
   Mail,
   X,
   Upload,
-  Image as ImageIcon
+  Image as ImageIcon,
+  ArrowUp
 } from 'lucide-react';
 import { getSkillIcon, WhatsAppLogo } from './Icons';
 
@@ -88,6 +89,31 @@ function compressImage(file: File, maxWidth = 800, quality = 0.75): Promise<stri
   });
 }
 
+// Helper: sorts apps with newest timestamps/dates on top
+function sortAppsNewestFirst(items: AppItem[]): AppItem[] {
+  return [...items].sort((a, b) => {
+    const tA = a.createdAtTimestamp;
+    const tB = b.createdAtTimestamp;
+    if (tA !== undefined && tB !== undefined && tA !== tB) {
+      return tB - tA; // Highest timestamp (newest) on top
+    }
+    if (tB !== undefined && tA === undefined) return 1;
+    if (tA !== undefined && tB === undefined) return -1;
+
+    // Fallback to createdAt string date parsing
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    if (!isNaN(dateA) && !isNaN(dateB) && dateA !== dateB) {
+      return dateB - dateA;
+    }
+
+    if (a.id === 'pulse-fitness-app') return 1;
+    if (b.id === 'pulse-fitness-app') return -1;
+
+    return 0;
+  });
+}
+
 export default function AdminPanel({
   apps,
   websites,
@@ -107,13 +133,13 @@ export default function AdminPanel({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Local optimistic lists for instant updates
-  const [localApps, setLocalApps] = useState<AppItem[]>(apps);
+  // Local optimistic lists for instant updates with newest apps on top
+  const [localApps, setLocalApps] = useState<AppItem[]>(() => sortAppsNewestFirst(apps));
   const [localWebsites, setLocalWebsites] = useState<WebsiteItem[]>(websites);
   const [localSkills, setLocalSkills] = useState<SkillItem[]>(skills);
   const [localInquiries, setLocalInquiries] = useState<InquiryItem[]>(inquiries);
 
-  useEffect(() => { setLocalApps(apps); }, [apps]);
+  useEffect(() => { setLocalApps(sortAppsNewestFirst(apps)); }, [apps]);
   useEffect(() => { setLocalWebsites(websites); }, [websites]);
   useEffect(() => { setLocalSkills(skills); }, [skills]);
   useEffect(() => { setLocalInquiries(inquiries); }, [inquiries]);
@@ -226,7 +252,8 @@ export default function AdminPanel({
         apkFileName: apkFileName.trim() || `${appTitle.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_v1.apk`,
         apkSize: apkSize.trim() || '15 MB',
         screenshots: JSON.stringify(screenshotsList),
-        createdAt: new Date().toLocaleDateString()
+        createdAt: new Date().toLocaleDateString(),
+        createdAtTimestamp: Date.now()
       };
 
       if (editingAppId) {
@@ -234,7 +261,7 @@ export default function AdminPanel({
         showToast('App updated live in database!');
       } else {
         await addDoc(collection(db, APPS_COLLECTION), payload);
-        showToast('New App published live for all visitors!');
+        showToast('New App published at top of website!');
       }
 
       setAppTitle('');
@@ -320,6 +347,25 @@ export default function AdminPanel({
       showToast('Error saving skill');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Bring any existing or new app to the very top without deleting
+  const handleBringAppToTop = async (appId: string, appTitleText: string) => {
+    try {
+      const topTimestamp = Date.now() + 5000;
+      setLocalApps((prev) => {
+        const updated = prev.map((a) => (a.id === appId ? { ...a, createdAtTimestamp: topTimestamp } : a));
+        return sortAppsNewestFirst(updated);
+      });
+      await updateDoc(doc(db, APPS_COLLECTION, appId), {
+        createdAtTimestamp: topTimestamp
+      });
+      showToast(`"${appTitleText}" moved to the top of website!`);
+      onRefresh();
+    } catch (err) {
+      console.error('Error bringing app to top:', err);
+      showToast('Error moving app to top');
     }
   };
 
@@ -793,6 +839,14 @@ export default function AdminPanel({
                             title="Edit App"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleBringAppToTop(app.id, app.title)}
+                            className="p-1.5 rounded-lg hover:bg-blue-600/20 text-slate-400 hover:text-blue-400 transition-colors cursor-pointer"
+                            title="Move to Top (Sabse Upar Laayein)"
+                          >
+                            <ArrowUp className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => setPendingDelete({ type: 'app', id: app.id, title: app.title })}

@@ -10,7 +10,6 @@ import {
   Search,
   Check,
   Send,
-  Download,
   Smartphone,
   Globe,
   ExternalLink,
@@ -66,12 +65,38 @@ const NAV_SECTIONS = [
   { id: 'start-project', label: 'Contact' }
 ];
 
+// Helper: sorts apps with newest timestamps/dates on top
+function sortAppsNewestFirst(items: AppItem[]): AppItem[] {
+  return [...items].sort((a, b) => {
+    const tA = a.createdAtTimestamp;
+    const tB = b.createdAtTimestamp;
+    if (tA !== undefined && tB !== undefined && tA !== tB) {
+      return tB - tA; // Highest timestamp (newest) on top
+    }
+    if (tB !== undefined && tA === undefined) return 1;
+    if (tA !== undefined && tB === undefined) return -1;
+
+    // Fallback to createdAt string date parsing
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    if (!isNaN(dateA) && !isNaN(dateB) && dateA !== dateB) {
+      return dateB - dateA;
+    }
+
+    if (a.id === 'pulse-fitness-app') return 1;
+    if (b.id === 'pulse-fitness-app') return -1;
+
+    return 0;
+  });
+}
+
 export default function App() {
   // Navigation Routing States - Defaults strictly to false so refresh never opens admin
   const [isAdminView, setIsAdminView] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
+      const p = window.location.pathname.toLowerCase();
       const h = window.location.hash.toLowerCase();
-      return h === '#open-admin' || h === '#/admin';
+      return p.endsWith('/admin') || p.includes('/admin') || h === '#admin' || h === '#/admin' || h === '#open-admin';
     }
     return false;
   });
@@ -81,7 +106,7 @@ export default function App() {
       const p = window.location.pathname;
       const h = window.location.hash;
       const matchPath = p.match(/\/app\/([^/?#]+)/);
-      const matchHash = h.match(/#\/app\/([^/?#]+)/);
+      const matchHash = h.match(/#\/?app\/([^/?#]+)/);
       return matchPath?.[1] || matchHash?.[1] || null;
     }
     return null;
@@ -90,26 +115,16 @@ export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const [activeSection, setActiveSection] = useState<string>('home');
 
-  // Secret owner backdoor: 5 clicks on "KN" logo opens Admin Panel
-  const [brandClickCount, setBrandClickCount] = useState<number>(0);
-  const brandClickTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Interactive Mouse Cursor Follower Spotlight Position
+  const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: -1000, y: -1000 });
 
-  const handleBrandClick = () => {
-    setBrandClickCount((prev) => {
-      const next = prev + 1;
-      if (next >= 5) {
-        setIsAdminView(true);
-        window.location.hash = 'open-admin';
-        return 0;
-      }
-      return next;
-    });
-
-    if (brandClickTimerRef.current) clearTimeout(brandClickTimerRef.current);
-    brandClickTimerRef.current = setTimeout(() => {
-      setBrandClickCount(0);
-    }, 2500);
-  };
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePos({ x: e.clientX, y: e.clientY });
+    };
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
   // Firestore synced state with cache & deduplication
   const [apps, setApps] = useState<AppItem[]>(() => {
@@ -117,7 +132,7 @@ export default function App() {
       const cached = localStorage.getItem('kn_cached_apps');
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) return sortAppsNewestFirst(parsed);
       }
     } catch (e) {}
     return DEFAULT_APPS;
@@ -160,6 +175,46 @@ export default function App() {
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
   const [isSavingInquiry, setIsSavingInquiry] = useState<boolean>(false);
 
+  // Slide-in From Right Animation Trigger (100% Reliable after hosting on Vercel)
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('revealed');
+          }
+        });
+      },
+      { rootMargin: '0px 0px -40px 0px', threshold: 0.08 }
+    );
+
+    const observeAll = () => {
+      const elements = document.querySelectorAll('.slide-right-enter');
+      elements.forEach((el) => observer.observe(el));
+
+      // Trigger elements currently in viewport right away with smooth entry
+      elements.forEach((el) => {
+        const rect = el.getBoundingClientRect();
+        if (rect.top < window.innerHeight * 0.95) {
+          el.classList.add('revealed');
+        }
+      });
+    };
+
+    observeAll();
+    const timer = setTimeout(observeAll, 120);
+    // Absolute fallback: ensure everything is visible even if browser delays
+    const fallbackTimer = setTimeout(() => {
+      document.querySelectorAll('.slide-right-enter').forEach((el) => el.classList.add('revealed'));
+    }, 1200);
+
+    return () => {
+      observer.disconnect();
+      clearTimeout(timer);
+      clearTimeout(fallbackTimer);
+    };
+  }, [apps, websites, skills, activeAppSlug, isAdminView]);
+
   // Precise scroll spy: updates activeSection in the exact sequential order of the page
   useEffect(() => {
     const handleScroll = () => {
@@ -167,19 +222,16 @@ export default function App() {
       const windowHeight = window.innerHeight;
       const docHeight = document.documentElement.scrollHeight;
 
-      // 1. If at top of the page (within 160px)
       if (scrollY < 160) {
         setActiveSection('home');
         return;
       }
 
-      // 2. If near bottom of the page (within 180px of doc end)
       if (scrollY + windowHeight >= docHeight - 180) {
         setActiveSection('start-project');
         return;
       }
 
-      // 3. Middle sections: detect which section boundary user has entered
       const activationOffset = windowHeight * 0.35;
       let matched = 'home';
 
@@ -207,7 +259,7 @@ export default function App() {
       const path = window.location.pathname.toLowerCase();
       const hash = window.location.hash.toLowerCase();
 
-      // Check admin route
+      // Check admin route (strictly URL based)
       if (
         path.endsWith('/admin') ||
         path.includes('/admin') ||
@@ -246,14 +298,6 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const navigateToAdmin = () => {
-    setIsMenuOpen(false);
-    window.history.pushState({}, '', '/admin');
-    setIsAdminView(true);
-    setActiveAppSlug(null);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
   const navigateToApp = (appItem: AppItem) => {
     const slug = getSlug(appItem.title);
     window.history.pushState({}, '', `/app/${slug}`);
@@ -263,7 +307,7 @@ export default function App() {
 
   // Listen to Firestore Realtime Data with STRICT DEDUPLICATION
   useEffect(() => {
-    // 1. Apps Listener (Deduplicated by ID & normalized Title)
+    // 1. Apps Listener (Deduplicated)
     const unsubApps = onSnapshot(
       collection(db, APPS_COLLECTION),
       (snap) => {
@@ -282,15 +326,16 @@ export default function App() {
             }
           });
 
-          const finalList = items.length > 0 ? items : DEFAULT_APPS;
+          const sortedItems = sortAppsNewestFirst(items);
+          const finalList = sortedItems.length > 0 ? sortedItems : DEFAULT_APPS;
           setApps(finalList);
           localStorage.setItem('kn_cached_apps', JSON.stringify(finalList));
         } else {
-          if (!localStorage.getItem('kn_apps_seeded_once_v6')) {
+          if (!localStorage.getItem('kn_apps_seeded_once_v7')) {
             DEFAULT_APPS.forEach(async (app) => {
               await setDoc(doc(db, APPS_COLLECTION, app.id), app).catch(console.warn);
             });
-            localStorage.setItem('kn_apps_seeded_once_v6', 'true');
+            localStorage.setItem('kn_apps_seeded_once_v7', 'true');
             setApps(DEFAULT_APPS);
           } else {
             setApps([]);
@@ -324,11 +369,11 @@ export default function App() {
           setWebsites(finalList);
           localStorage.setItem('kn_cached_websites', JSON.stringify(finalList));
         } else {
-          if (!localStorage.getItem('kn_web_seeded_once_v6')) {
+          if (!localStorage.getItem('kn_web_seeded_once_v7')) {
             DEFAULT_WEBSITES.forEach(async (web) => {
               await setDoc(doc(db, WEBSITES_COLLECTION, web.id), web).catch(console.warn);
             });
-            localStorage.setItem('kn_web_seeded_once_v6', 'true');
+            localStorage.setItem('kn_web_seeded_once_v7', 'true');
             setWebsites(DEFAULT_WEBSITES);
           } else {
             setWebsites([]);
@@ -339,7 +384,7 @@ export default function App() {
       (err) => console.warn('Firestore websites snapshot warning:', err)
     );
 
-    // 3. Skills Listener (Deduplicated by ID & normalized Name - Never double)
+    // 3. Skills Listener (Deduplicated)
     const unsubSkills = onSnapshot(
       collection(db, SKILLS_COLLECTION),
       (snap) => {
@@ -363,11 +408,11 @@ export default function App() {
           setSkills(finalList);
           localStorage.setItem('kn_cached_skills', JSON.stringify(finalList));
         } else {
-          if (!localStorage.getItem('kn_skills_seeded_once_v6')) {
+          if (!localStorage.getItem('kn_skills_seeded_once_v7')) {
             DEFAULT_SKILLS.forEach(async (sk) => {
               await setDoc(doc(db, SKILLS_COLLECTION, sk.id), sk).catch(console.warn);
             });
-            localStorage.setItem('kn_skills_seeded_once_v6', 'true');
+            localStorage.setItem('kn_skills_seeded_once_v7', 'true');
             setSkills(DEFAULT_SKILLS);
           } else {
             setSkills([]);
@@ -489,7 +534,7 @@ export default function App() {
     (app.category && app.category.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  // ROUTE 1: ADMIN PANEL (Only when explicitly opened)
+  // ROUTE 1: ADMIN PANEL (Only when explicitly opened via URL /admin or /#admin)
   if (isAdminView) {
     return (
       <AdminPanel
@@ -521,13 +566,21 @@ export default function App() {
   return (
     <div className="min-h-screen bg-black text-white selection:bg-blue-600 selection:text-white relative">
       
+      {/* Interactive Ambient Mouse Spotlight Glow on Background */}
+      <div
+        className="pointer-events-none fixed inset-0 z-20 transition-opacity duration-300 opacity-70 hidden md:block"
+        style={{
+          background: `radial-gradient(650px circle at ${mousePos.x}px ${mousePos.y}px, rgba(59, 130, 246, 0.08), transparent 80%)`
+        }}
+      />
+
       {/* ===================== ELEVATED DISTINCT TOP BAR ===================== */}
-      <header className="sticky top-0 z-40 bg-[#121217] border-b border-[#20212b] px-4 sm:px-8 py-3.5 backdrop-blur-md shadow-lg shadow-black/40">
+      <header className="sticky top-0 z-40 bg-[#121217]/95 border-b border-[#20212b] px-4 sm:px-8 py-3.5 backdrop-blur-md shadow-lg shadow-black/40">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           
-          {/* Left Brand: KN Builders (5 rapid clicks triggers secret owner admin) */}
+          {/* Brand Logo */}
           <div
-            onClick={handleBrandClick}
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             className="flex items-center gap-1.5 cursor-pointer select-none group"
             title="KN Builders"
           >
@@ -564,7 +617,7 @@ export default function App() {
         </div>
       </header>
 
-      {/* ===================== 3-LINES NAVIGATION DRAWER (Exact Sequential Order) ===================== */}
+      {/* ===================== 3-LINES NAVIGATION DRAWER ===================== */}
       {isMenuOpen && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/80 backdrop-blur-sm transition-all">
           <div className="w-full max-w-xs sm:max-w-sm bg-[#0e0e14] border-l border-[#20202c] h-full flex flex-col justify-between p-6 shadow-2xl animate-in slide-in-from-right duration-300">
@@ -634,16 +687,15 @@ export default function App() {
         </div>
       )}
 
-      {/* ===================== MAIN CONTENT CONTAINER ===================== */}
-      {/* 50/50 Split on Tablet & Desktop */}
+      {/* ===================== MAIN CONTENT CONTAINER (SINGLE UNIFIED SCROLLBAR) ===================== */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
         <div className="md:grid md:grid-cols-12 md:gap-8 lg:gap-12 items-start">
           
-          {/* ==================== LEFT COLUMN (DESKTOP & TABLET 50/50 SPLIT) ==================== */}
-          <div id="home" className="md:col-span-5 lg:col-span-5 md:sticky md:top-24 space-y-7">
+          {/* ==================== LEFT COLUMN ==================== */}
+          <div id="home" className="md:col-span-5 lg:col-span-5 space-y-7">
             
             {/* Status Badge */}
-            <div>
+            <div className="slide-right-enter">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-[#0f0f15] border border-[#22222e] text-slate-300 shadow-sm transition-all duration-300 hover:border-emerald-500/50">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#16a34a] inline-block shadow-[0_0_10px_#22c55e] animate-pulse" />
                 <span>Open for new projects</span>
@@ -651,7 +703,7 @@ export default function App() {
             </div>
 
             {/* Main Headline */}
-            <div className="space-y-2">
+            <div className="space-y-2 slide-right-enter delay-75">
               <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-black tracking-tight leading-[1.12]">
                 <span>Hello! Welcome</span>
                 <br />
@@ -665,11 +717,11 @@ export default function App() {
               </p>
             </div>
 
-            {/* Primary Action Buttons: 50% / 50% Side-by-Side */}
-            <div className="grid grid-cols-2 gap-3 pt-1">
+            {/* Primary Action Buttons */}
+            <div className="grid grid-cols-2 gap-3 pt-1 slide-right-enter delay-150">
               <button
                 onClick={openWhatsAppChat}
-                className="w-full bg-[#25D366] hover:bg-[#1fb355] text-white font-bold py-3.5 px-3 sm:px-5 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-green-600/30 transition-all duration-300 hover:scale-[1.05] hover:shadow-[0_0_25px_rgba(37,211,102,0.5)] active:scale-[0.98] cursor-pointer text-xs sm:text-sm text-center"
+                className="w-full bg-[#25D366] hover:bg-[#1fb355] text-white font-bold py-3.5 px-3 sm:px-5 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-green-600/30 transition-all duration-300 hover:scale-[1.05] hover:shadow-[0_0_25px_rgba(37,211,102,0.5)] active:scale-[0.98] cursor-pointer text-xs sm:text-sm text-center mouse-hover-card"
               >
                 <WhatsAppLogo className="w-5 h-5 shrink-0" />
                 <span className="truncate">Want an app?</span>
@@ -677,7 +729,7 @@ export default function App() {
 
               <button
                 onClick={() => scrollToSection('apps-section')}
-                className="w-full py-3.5 px-3 sm:px-5 rounded-2xl text-xs sm:text-sm font-semibold transition-all duration-300 hover:scale-[1.05] hover:border-blue-500/80 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] active:scale-[0.98] cursor-pointer bg-[#0f0f15] hover:bg-[#161622] border border-[#22222e] text-slate-200 text-center flex items-center justify-center"
+                className="w-full py-3.5 px-3 sm:px-5 rounded-2xl text-xs sm:text-sm font-semibold transition-all duration-300 hover:scale-[1.05] hover:border-blue-500/80 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] active:scale-[0.98] cursor-pointer bg-[#0f0f15] hover:bg-[#161622] border border-[#22222e] text-slate-200 text-center flex items-center justify-center mouse-hover-card"
               >
                 <span>See our work</span>
               </button>
@@ -685,21 +737,21 @@ export default function App() {
 
             {/* 3 Stat Metrics Grid */}
             <div className="grid grid-cols-3 gap-3 pt-2">
-              <div className="rounded-2xl p-4 flex flex-col items-center justify-center text-center bg-[#0d0d12] border border-[#20202c] transition-all duration-300 hover:scale-[1.06] hover:border-blue-500/80 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+              <div className="rounded-2xl p-4 flex flex-col items-center justify-center text-center bg-[#0d0d12] border border-[#20202c] slide-right-enter delay-150 mouse-hover-card">
                 <span className="text-3xl sm:text-4xl font-black text-[#38bdf8] tracking-tight">
                   {apps.length}
                 </span>
                 <span className="text-xs font-semibold text-slate-400 mt-1.5">Apps built</span>
               </div>
 
-              <div className="rounded-2xl p-4 flex flex-col items-center justify-center text-center bg-[#0d0d12] border border-[#20202c] transition-all duration-300 hover:scale-[1.06] hover:border-blue-500/80 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+              <div className="rounded-2xl p-4 flex flex-col items-center justify-center text-center bg-[#0d0d12] border border-[#20202c] slide-right-enter delay-225 mouse-hover-card">
                 <span className="text-3xl sm:text-4xl font-black text-[#38bdf8] tracking-tight">
                   {websites.length}
                 </span>
                 <span className="text-xs font-semibold text-slate-400 mt-1.5">Websites</span>
               </div>
 
-              <div className="rounded-2xl p-4 flex flex-col items-center justify-center text-center bg-[#0d0d12] border border-[#20202c] transition-all duration-300 hover:scale-[1.06] hover:border-blue-500/80 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+              <div className="rounded-2xl p-4 flex flex-col items-center justify-center text-center bg-[#0d0d12] border border-[#20202c] slide-right-enter delay-300 mouse-hover-card">
                 <span className="text-3xl sm:text-4xl font-black text-[#2563eb] tracking-tight">
                   24/7
                 </span>
@@ -708,18 +760,18 @@ export default function App() {
             </div>
 
             {/* ===================== SKILLS SECTION (Step 2 in sequence) ===================== */}
-            <div id="skills-section" className="scroll-reveal-item space-y-4 pt-4">
-              <div className="flex items-center justify-between">
+            <div id="skills-section" className="space-y-4 pt-4">
+              <div className="flex items-center justify-between slide-right-enter">
                 <h2 className="text-2xl font-black tracking-tight">Skills</h2>
                 <span className="text-xs text-blue-400 font-semibold">{skills.length} Technologies</span>
               </div>
 
-              {/* 2-column Grid - deduplicated, will never double */}
+              {/* 2-column Grid */}
               <div className="grid grid-cols-2 gap-3">
-                {skills.map((skill) => (
+                {skills.map((skill, index) => (
                   <div
                     key={skill.id}
-                    className="p-4 rounded-2xl bg-[#0e0e14] border border-[#20202c] flex items-center gap-3 transition-all duration-300 hover:scale-[1.08] hover:-translate-y-1 hover:border-blue-400 hover:shadow-[0_0_25px_rgba(59,130,246,0.45)] cursor-pointer group select-none"
+                    className={`p-4 rounded-2xl bg-[#0e0e14] border border-[#20202c] flex items-center gap-3 cursor-pointer group select-none slide-right-enter delay-${(index % 4) * 75 + 75} mouse-hover-card`}
                   >
                     <div className="w-11 h-11 rounded-xl bg-[#161622] border border-[#262636] group-hover:border-blue-500/60 flex items-center justify-center shrink-0 transition-colors">
                       {getSkillIcon(skill.iconType, 'w-5 h-5')}
@@ -736,7 +788,7 @@ export default function App() {
             </div>
 
             {/* Services Guarantee Box */}
-            <div className="p-4 rounded-2xl bg-[#09090f] border border-[#1b1b26] space-y-2">
+            <div className="p-4 rounded-2xl bg-[#09090f] border border-[#1b1b26] space-y-2 slide-right-enter delay-225 mouse-hover-card">
               <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                 <span>Production Quality Guarantee</span>
@@ -748,24 +800,24 @@ export default function App() {
 
           </div>
 
-          {/* ==================== RIGHT COLUMN (DESKTOP & TABLET 50/50 SPLIT) ==================== */}
+          {/* ==================== RIGHT COLUMN ==================== */}
           <div className="md:col-span-7 lg:col-span-7 space-y-14 mt-12 md:mt-0">
 
             {/* ===================== APPS SECTION (Step 3 in sequence) ===================== */}
             <section
               id="apps-section"
-              className="scroll-reveal-item space-y-4"
+              className="space-y-4"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between slide-right-enter">
                 <div>
                   <h2 className="text-2xl font-black tracking-tight">Apps</h2>
                   <p className="text-xs text-slate-400">Mobile applications built and published by KN Builders</p>
                 </div>
-                <span className="text-xs text-slate-400 font-semibold">{apps.length} Apps</span>
+                <span className="text-xs text-blue-400 font-semibold">{apps.length} Apps</span>
               </div>
 
               {/* Search Bar */}
-              <div className="relative">
+              <div className="relative slide-right-enter delay-75">
                 <Search className="w-4 h-4 text-slate-500 absolute left-4 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
@@ -779,10 +831,11 @@ export default function App() {
               {/* Production Showcase App Cards */}
               {filteredApps.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                  {filteredApps.map((app) => (
+                  {filteredApps.map((app, index) => (
                     <div
                       key={app.id}
-                      className="p-5 rounded-2xl bg-[#0e0e15] border border-[#20202c] flex flex-col justify-between transition-all duration-300 hover:scale-[1.03] hover:border-blue-500/80 hover:shadow-[0_0_25px_rgba(59,130,246,0.3)] group select-none"
+                      onClick={() => navigateToApp(app)}
+                      className={`p-5 rounded-2xl bg-[#0e0e15] border border-[#20202c] flex flex-col justify-between group select-none cursor-pointer slide-right-enter delay-${(index % 4) * 75 + 100} mouse-hover-card`}
                     >
                       <div className="flex items-start gap-3.5">
                         <img
@@ -811,7 +864,10 @@ export default function App() {
                           {app.apkSize || '15 MB'} • Android App
                         </span>
                         <button
-                          onClick={() => navigateToApp(app)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigateToApp(app);
+                          }}
                           className="px-4 py-2 rounded-xl bg-blue-600/15 hover:bg-blue-600 border border-blue-500/30 hover:border-blue-500 text-xs font-bold text-blue-400 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
                         >
                           <Eye className="w-3.5 h-3.5" />
@@ -822,7 +878,7 @@ export default function App() {
                   ))}
                 </div>
               ) : (
-                <div className="py-8 text-center bg-[#0a0a0f] border border-[#1b1b24] rounded-2xl">
+                <div className="py-8 text-center bg-[#0a0a0f] border border-[#1b1b24] rounded-2xl slide-right-enter">
                   <p className="text-sm font-medium text-slate-400">
                     {searchQuery ? `No apps matching "${searchQuery}"` : 'Apps coming soon.'}
                   </p>
@@ -833,19 +889,19 @@ export default function App() {
             {/* ===================== WEBSITES SECTION (Step 4 in sequence) ===================== */}
             <section
               id="websites-section"
-              className="scroll-reveal-item space-y-4"
+              className="space-y-4"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between slide-right-enter">
                 <h2 className="text-2xl font-black tracking-tight">Websites</h2>
-                <span className="text-xs text-slate-400">{websites.length} Projects</span>
+                <span className="text-xs text-slate-400 font-semibold">{websites.length} Projects</span>
               </div>
 
               {websites.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {websites.map((web) => (
+                  {websites.map((web, index) => (
                     <div
                       key={web.id}
-                      className="p-5 rounded-2xl bg-[#0e0e15] border border-[#20202c] flex flex-col justify-between transition-all duration-300 hover:scale-[1.04] hover:-translate-y-1 hover:border-blue-400 hover:shadow-[0_0_25px_rgba(59,130,246,0.35)]"
+                      className={`p-5 rounded-2xl bg-[#0e0e15] border border-[#20202c] flex flex-col justify-between slide-right-enter delay-${(index % 4) * 75 + 100} mouse-hover-card`}
                     >
                       <div>
                         <h3 className="font-bold text-base text-white">{web.title}</h3>
@@ -870,7 +926,7 @@ export default function App() {
                   ))}
                 </div>
               ) : (
-                <div className="py-8 text-center bg-[#0a0a0f] border border-[#1b1b24] rounded-2xl">
+                <div className="py-8 text-center bg-[#0a0a0f] border border-[#1b1b24] rounded-2xl slide-right-enter">
                   <p className="text-sm font-medium text-slate-400">
                     Websites coming soon.
                   </p>
@@ -881,15 +937,15 @@ export default function App() {
             {/* ===================== HOW WE WORK SECTION (Step 5 in sequence) ===================== */}
             <section
               id="how-we-work-section"
-              className="scroll-reveal-item space-y-4"
+              className="space-y-4"
             >
-              <h2 className="text-2xl font-black tracking-tight">How we work</h2>
+              <h2 className="text-2xl font-black tracking-tight slide-right-enter">How we work</h2>
 
               <div className="space-y-3">
-                {steps.map((step) => (
+                {steps.map((step, index) => (
                   <div
                     key={step.num}
-                    className="rounded-2xl p-4.5 flex items-center gap-4 bg-[#0d0d12] border border-[#1f1f2c] transition-all duration-300 hover:scale-[1.03] hover:border-blue-400 hover:shadow-[0_0_25px_rgba(59,130,246,0.3)] cursor-pointer"
+                    className={`rounded-2xl p-4.5 flex items-center gap-4 bg-[#0d0d12] border border-[#1f1f2c] cursor-pointer slide-right-enter delay-${index * 75 + 75} mouse-hover-card`}
                   >
                     <div className="w-9 h-9 rounded-full bg-[#2563eb] text-white font-extrabold text-sm flex items-center justify-center shrink-0 shadow-md shadow-blue-600/30">
                       {step.num}
@@ -907,9 +963,9 @@ export default function App() {
             {/* ===================== FAQ SECTION (Step 6 in sequence) ===================== */}
             <section
               id="faq-section"
-              className="scroll-reveal-item space-y-4"
+              className="space-y-4"
             >
-              <h2 className="text-2xl font-black tracking-tight">FAQ</h2>
+              <h2 className="text-2xl font-black tracking-tight slide-right-enter">FAQ</h2>
 
               <div className="space-y-3">
                 {faqs.map((faq, index) => {
@@ -918,7 +974,7 @@ export default function App() {
                     <div
                       key={index}
                       onClick={() => toggleFaq(index)}
-                      className="rounded-2xl p-4 cursor-pointer bg-[#0d0d12] border border-[#1f1f2c] transition-all duration-300 hover:scale-[1.02] hover:border-blue-500/70 hover:shadow-[0_0_20px_rgba(59,130,246,0.25)] select-none"
+                      className={`rounded-2xl p-4 cursor-pointer bg-[#0d0d12] border border-[#1f1f2c] select-none slide-right-enter delay-${index * 75 + 75} mouse-hover-card`}
                     >
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-blue-400 font-bold">{isOpen ? '▼' : '▶'}</span>
@@ -939,11 +995,11 @@ export default function App() {
             {/* ===================== START A PROJECT / CONTACT SECTION (Step 7 in sequence) ===================== */}
             <section
               id="start-project"
-              className="scroll-reveal-item space-y-4"
+              className="space-y-4"
             >
-              <h2 className="text-2xl font-black tracking-tight">Start a project</h2>
+              <h2 className="text-2xl font-black tracking-tight slide-right-enter">Start a project</h2>
 
-              <div className="rounded-3xl p-5 sm:p-7 space-y-6 bg-[#0d0d14] border border-[#1f1f2c] shadow-2xl">
+              <div className="rounded-3xl p-5 sm:p-7 space-y-6 bg-[#0d0d14] border border-[#1f1f2c] shadow-2xl slide-right-enter delay-75">
                 
                 {/* Top Quick Actions: WhatsApp & 📧 Styled Mail */}
                 <div className="grid grid-cols-2 gap-3">
@@ -951,7 +1007,7 @@ export default function App() {
                   <button
                     onClick={openWhatsAppChat}
                     type="button"
-                    className="bg-[#25D366] hover:bg-[#1fb355] text-white p-4.5 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-md shadow-green-600/30 transition-all duration-300 hover:scale-[1.04] hover:shadow-[0_0_25px_rgba(37,211,102,0.5)] active:scale-[0.98] cursor-pointer min-h-[96px]"
+                    className="bg-[#25D366] hover:bg-[#1fb355] text-white p-4.5 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-md shadow-green-600/30 cursor-pointer min-h-[96px] mouse-hover-card"
                   >
                     <WhatsAppLogo className="w-6 h-6 shrink-0" />
                     <span className="text-sm font-bold">WhatsApp</span>
@@ -963,7 +1019,7 @@ export default function App() {
                     onClick={openMail}
                     type="button"
                     title={`Send email to ${CONTACT_EMAIL}`}
-                    className="p-4.5 rounded-2xl flex flex-col items-center justify-center gap-2 bg-[#14141c] hover:bg-[#1c1c28] border border-[#262636] text-white font-medium text-sm min-h-[96px] transition-all duration-300 hover:scale-[1.04] hover:border-blue-400 hover:shadow-[0_0_25px_rgba(59,130,246,0.35)] active:scale-[0.98] cursor-pointer"
+                    className="p-4.5 rounded-2xl flex flex-col items-center justify-center gap-2 bg-[#14141c] hover:bg-[#1c1c28] border border-[#262636] text-white font-medium text-sm min-h-[96px] cursor-pointer mouse-hover-card"
                   >
                     <EmailEnvelopeIcon className="w-6 h-6 shrink-0" />
                     <span className="text-sm font-bold">Send Mail</span>
@@ -1092,7 +1148,7 @@ export default function App() {
                     <button
                       type="submit"
                       disabled={isSavingInquiry}
-                      className="w-full bg-gradient-to-r from-[#2563eb] via-[#4f46e5] to-[#8b5cf6] hover:from-[#1d4ed8] hover:to-[#7c3aed] text-white font-bold py-4 px-6 rounded-2xl shadow-lg shadow-indigo-600/25 active:scale-[0.99] transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_0_25px_rgba(99,102,241,0.5)] cursor-pointer text-center text-sm sm:text-base mt-2 flex items-center justify-center gap-2"
+                      className="w-full bg-gradient-to-r from-[#2563eb] via-[#4f46e5] to-[#8b5cf6] hover:from-[#1d4ed8] hover:to-[#7c3aed] text-white font-bold py-4 px-6 rounded-2xl shadow-lg shadow-indigo-600/25 active:scale-[0.99] transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_0_25px_rgba(99,102,241,0.5)] cursor-pointer text-center text-sm sm:text-base mt-2 flex items-center justify-center gap-2 mouse-hover-card"
                     >
                       <Send className="w-4 h-4" />
                       <span>{isSavingInquiry ? 'Sending...' : 'Send message'}</span>

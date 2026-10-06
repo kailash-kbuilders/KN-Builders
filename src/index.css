@@ -1,6 +1,12 @@
 @import "tailwindcss";
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+    background-color: #000000;
+  }
+
   body {
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -8,31 +14,86 @@
     background-color: #000000;
     color: #ffffff;
     overflow-x: hidden;
+    overflow-y: auto;
+    min-height: 100vh;
   }
 }
 
-/* Ensure no elements get stuck invisible or cut off */
-.scroll-reveal-item {
-  opacity: 1;
-  transform: translateX(0);
-  transition: transform 0.4s ease-out, border-color 0.3s ease;
+/* ==========================================================================
+   SINGLE GLOBAL SCROLLBAR (Fixes dual scrollbars on desktop)
+   Only html & body get the custom scrollbar thumb
+   ========================================================================== */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 8px;
 }
 
-/* Custom smooth dark scrollbar */
-::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
-}
-
-::-webkit-scrollbar-track {
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track {
   background: #09090d;
 }
 
-::-webkit-scrollbar-thumb {
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb {
   background: #252636;
   border-radius: 9999px;
+  border: 2px solid #09090d;
 }
 
-::-webkit-scrollbar-thumb:hover {
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover {
   background: #3b82f6;
+}
+
+/* Hide scrollbars on internal overflow-x horizontal containers (drawers, chips, etc) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ==========================================================================
+   SMOOTH SLIDE-IN FROM RIGHT ANIMATIONS
+   Works 100% reliably in development and on hosted production (Vercel)
+   ========================================================================== */
+.slide-right-enter {
+  opacity: 0;
+  transform: translateX(45px);
+  transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.slide-right-enter.revealed {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Stagger delay helpers for child elements (cards, badges, buttons) */
+.delay-75 { transition-delay: 75ms; }
+.delay-150 { transition-delay: 150ms; }
+.delay-225 { transition-delay: 225ms; }
+.delay-300 { transition-delay: 300ms; }
+.delay-375 { transition-delay: 375ms; }
+.delay-450 { transition-delay: 450ms; }
+
+/* ==========================================================================
+   INTERACTIVE MOUSE HOVER OVER-EFFECTS
+   Smooth lift, luminous glow and responsive cursor feel
+   ========================================================================== */
+.mouse-hover-card {
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.28s ease;
+  will-change: transform, box-shadow;
+}
+
+.mouse-hover-card:hover {
+  transform: translateY(-5px) scale(1.02);
+  border-color: rgba(96, 165, 250, 0.7);
+  box-shadow: 0 10px 30px -10px rgba(59, 130, 246, 0.4), 0 0 20px rgba(59, 130, 246, 0.2);
 }
