@@ -20,7 +20,9 @@ import {
   addDoc,
   deleteDoc,
   doc,
-  updateDoc
+  updateDoc,
+  setDoc,
+  onSnapshot
 } from 'firebase/firestore';
 import {
   ArrowLeft,
@@ -143,6 +145,58 @@ export default function AdminPanel({
   useEffect(() => { setLocalSkills(skills); }, [skills]);
   useEffect(() => { setLocalInquiries(inquiries); }, [inquiries]);
 
+  // Realtime Firestore listeners directly inside AdminPanel so multiple admins on different phones stay 100% synced in real time
+  useEffect(() => {
+    const unsubApps = onSnapshot(collection(db, APPS_COLLECTION), (snap) => {
+      if (!snap.empty) {
+        const items: AppItem[] = [];
+        const seenIds = new Set<string>();
+        snap.forEach((docSnap) => {
+          if (!seenIds.has(docSnap.id)) {
+            seenIds.add(docSnap.id);
+            items.push({ id: docSnap.id, ...(docSnap.data() as Omit<AppItem, 'id'>) });
+          }
+        });
+        setLocalApps(sortAppsNewestFirst(items));
+      }
+    }, (err) => console.warn('Admin apps onSnapshot warning:', err));
+
+    const unsubWeb = onSnapshot(collection(db, WEBSITES_COLLECTION), (snap) => {
+      if (!snap.empty) {
+        const items: WebsiteItem[] = [];
+        const seenIds = new Set<string>();
+        snap.forEach((docSnap) => {
+          if (!seenIds.has(docSnap.id)) {
+            seenIds.add(docSnap.id);
+            items.push({ id: docSnap.id, ...(docSnap.data() as Omit<WebsiteItem, 'id'>) });
+          }
+        });
+        setLocalWebsites(items);
+      }
+    }, (err) => console.warn('Admin web onSnapshot warning:', err));
+
+    const unsubSkills = onSnapshot(collection(db, SKILLS_COLLECTION), (snap) => {
+      if (!snap.empty) {
+        const items: SkillItem[] = [];
+        const seenIds = new Set<string>();
+        snap.forEach((docSnap) => {
+          if (!seenIds.has(docSnap.id)) {
+            seenIds.add(docSnap.id);
+            items.push({ id: docSnap.id, ...(docSnap.data() as Omit<SkillItem, 'id'>) });
+          }
+        });
+        items.sort((a, b) => (a.order || 0) - (b.order || 0));
+        setLocalSkills(items);
+      }
+    }, (err) => console.warn('Admin skills onSnapshot warning:', err));
+
+    return () => {
+      unsubApps();
+      unsubWeb();
+      unsubSkills();
+    };
+  }, []);
+
   // Delete Confirmation Modal State
   const [pendingDelete, setPendingDelete] = useState<{
     type: 'app' | 'website' | 'skill' | 'inquiry';
@@ -211,35 +265,46 @@ export default function AdminPanel({
   };
 
   // App Logo file to dataURL helper
-  const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // App Logo file to dataURL helper (auto-compressed to <30KB for healthy Firestore sync)
+  const handleLogoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAppLogoUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      setIsSubmitting(true);
+      showToast('Optimizing app logo...');
+      try {
+        const compressed = await compressImage(file, 256, 0.82);
+        setAppLogoUrl(compressed || '');
+        showToast('Logo optimized & ready!');
+      } catch (err) {
+        console.error('Logo compression error:', err);
+        const reader = new FileReader();
+        reader.onloadend = () => setAppLogoUrl(reader.result as string);
+        reader.readAsDataURL(file);
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
-  // Multi-file Screenshot Uploader
+  // Multi-file Screenshot Uploader (auto-compressed to <60KB each for multi-device sync)
   const handleScreenshotsUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     setIsSubmitting(true);
-    showToast('Compressing and uploading screenshots...');
+    showToast('Optimizing screenshots for cloud sync...');
 
     const newScreenshots: string[] = [];
-    for (let i = 0; i < files.length; i++) {
-      const compressed = await compressImage(files[i]);
+    const count = Math.min(files.length, 6);
+    for (let i = 0; i < count; i++) {
+      const compressed = await compressImage(files[i], 640, 0.7);
       if (compressed) {
         newScreenshots.push(compressed);
       }
     }
 
-    setScreenshotsList((prev) => [...prev, ...newScreenshots]);
+    setScreenshotsList((prev) => [...prev, ...newScreenshots].slice(0, 8));
     setIsSubmitting(false);
-    showToast(`${newScreenshots.length} screenshot(s) added!`);
+    showToast(`${newScreenshots.length} screenshot(s) optimized & added!`);
   };
 
   const handleRemoveScreenshot = (indexToRemove: number) => {
@@ -252,26 +317,35 @@ export default function AdminPanel({
     if (!appTitle.trim()) return;
     setIsSubmitting(true);
     try {
+      const existingApp = editingAppId ? localApps.find((a) => a.id === editingAppId) : null;
+      const cleanPlatforms = Array.isArray(selectedPlatforms) && selectedPlatforms.length > 0
+        ? selectedPlatforms.map((p) => String(p).toLowerCase().trim()).filter(Boolean)
+        : ['android'];
+
       const payload = {
         title: appTitle.trim(),
         description: appDescription.trim(),
-        category: appCategory.trim(),
-        version: appVersion.trim() || 'v1.0.0',
-        logoUrl: appLogoUrl.trim() || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150',
-        apkUrl: appApkUrl.trim() || '#',
-        apkFileName: apkFileName.trim() || `${appTitle.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_v1.apk`,
-        apkSize: apkSize.trim() || '15 MB',
-        screenshots: JSON.stringify(screenshotsList),
-        platforms: selectedPlatforms,
-        createdAt: new Date().toLocaleDateString(),
-        createdAtTimestamp: Date.now()
+        category: (appCategory || 'Android App').trim(),
+        version: (appVersion || 'v1.0.0').trim(),
+        logoUrl: (appLogoUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150').trim(),
+        apkUrl: (appApkUrl || '#').trim(),
+        apkFileName: (apkFileName || `${appTitle.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_v1.apk`).trim(),
+        apkSize: (apkSize || '15 MB').trim(),
+        screenshots: JSON.stringify(screenshotsList || []),
+        platforms: cleanPlatforms,
+        createdAt: existingApp?.createdAt || new Date().toLocaleDateString(),
+        createdAtTimestamp: existingApp?.createdAtTimestamp || Date.now()
       };
 
       if (editingAppId) {
-        await updateDoc(doc(db, APPS_COLLECTION, editingAppId), payload);
+        // Use setDoc with merge: true so it NEVER fails with NOT_FOUND across multiple devices/phones
+        await setDoc(doc(db, APPS_COLLECTION, editingAppId), payload, { merge: true });
+        setLocalApps((prev) => prev.map((a) => (a.id === editingAppId ? { ...a, ...payload, id: editingAppId } : a)));
         showToast('App updated live in database!');
       } else {
-        await addDoc(collection(db, APPS_COLLECTION), payload);
+        const docRef = await addDoc(collection(db, APPS_COLLECTION), payload);
+        const newApp: AppItem = { id: docRef.id, ...payload };
+        setLocalApps((prev) => sortAppsNewestFirst([newApp, ...prev.filter((a) => a.id !== docRef.id)]));
         showToast('New App published at top of website!');
       }
 
@@ -284,9 +358,9 @@ export default function AdminPanel({
       setSelectedPlatforms(['android']);
       setEditingAppId(null);
       onRefresh();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Save app error:', err);
-      showToast('Error saving app to Firestore');
+      showToast(`Error: ${err?.message || 'Error saving app to Firestore'}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -308,7 +382,7 @@ export default function AdminPanel({
       };
 
       if (editingWebId) {
-        await updateDoc(doc(db, WEBSITES_COLLECTION, editingWebId), payload);
+        await setDoc(doc(db, WEBSITES_COLLECTION, editingWebId), payload, { merge: true });
         showToast('Website updated live!');
       } else {
         await addDoc(collection(db, WEBSITES_COLLECTION), payload);
@@ -321,9 +395,9 @@ export default function AdminPanel({
       setWebLiveUrl('');
       setEditingWebId(null);
       onRefresh();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Save website error:', err);
-      showToast('Error saving website');
+      showToast(`Error: ${err?.message || 'Error saving website'}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -344,7 +418,7 @@ export default function AdminPanel({
       };
 
       if (editingSkillId) {
-        await updateDoc(doc(db, SKILLS_COLLECTION, editingSkillId), payload);
+        await setDoc(doc(db, SKILLS_COLLECTION, editingSkillId), payload, { merge: true });
         showToast('Skill updated live on website!');
       } else {
         await addDoc(collection(db, SKILLS_COLLECTION), payload);
@@ -354,9 +428,9 @@ export default function AdminPanel({
       setSkillName('');
       setEditingSkillId(null);
       onRefresh();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Save skill error:', err);
-      showToast('Error saving skill');
+      showToast(`Error: ${err?.message || 'Error saving skill'}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -370,14 +444,14 @@ export default function AdminPanel({
         const updated = prev.map((a) => (a.id === appId ? { ...a, createdAtTimestamp: topTimestamp } : a));
         return sortAppsNewestFirst(updated);
       });
-      await updateDoc(doc(db, APPS_COLLECTION, appId), {
+      await setDoc(doc(db, APPS_COLLECTION, appId), {
         createdAtTimestamp: topTimestamp
-      });
+      }, { merge: true });
       showToast(`"${appTitleText}" moved to the top of website!`);
       onRefresh();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error bringing app to top:', err);
-      showToast('Error moving app to top');
+      showToast(`Error: ${err?.message || 'Error moving app to top'}`);
     }
   };
 
@@ -851,13 +925,33 @@ export default function AdminPanel({
                   )}
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold text-sm text-white transition-all cursor-pointer shadow-lg shadow-blue-600/30"
-                >
-                  {editingAppId ? 'Update App' : 'Add App'}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold text-sm text-white transition-all cursor-pointer shadow-lg shadow-blue-600/30 btn-interactive"
+                  >
+                    {isSubmitting ? 'Saving...' : editingAppId ? 'Update App' : 'Add App'}
+                  </button>
+                  {editingAppId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingAppId(null);
+                        setAppTitle('');
+                        setAppDescription('');
+                        setAppLogoUrl('');
+                        setAppApkUrl('');
+                        setApkFileName('');
+                        setScreenshotsList([]);
+                        setSelectedPlatforms(['android']);
+                      }}
+                      className="px-4 py-3 bg-[#1e1e2c] hover:bg-[#28283a] rounded-xl font-semibold text-sm text-slate-300 transition-all cursor-pointer btn-interactive"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
               </form>
             </div>
 
@@ -926,8 +1020,11 @@ export default function AdminPanel({
                               } catch (e) {
                                 setScreenshotsList(app.screenshots ? app.screenshots.split(',').map((s) => s.trim()).filter(Boolean) : []);
                               }
+
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                              showToast(`Editing "${app.title}"... Form is ready above.`);
                             }}
-                            className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
                             title="Edit App"
                           >
                             <Edit2 className="w-3.5 h-3.5" />

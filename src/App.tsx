@@ -44,6 +44,7 @@ import {
 import { WhatsAppLogo, EmailEnvelopeIcon, getSkillIcon, AndroidLogo, WindowsLogo, AppleLogo } from './components/Icons';
 import AdminPanel from './components/AdminPanel';
 import AppDetailPage from './components/AppDetailPage';
+import CustomCursor from './components/CustomCursor';
 
 const WHATSAPP_NUMBER = '6377938441';
 const WHATSAPP_URL = `https://wa.me/91${WHATSAPP_NUMBER}?text=${encodeURIComponent('hey KN Builders I want to create')}`;
@@ -343,15 +344,11 @@ export default function App() {
         if (!snap.empty) {
           const items: AppItem[] = [];
           const seenIds = new Set<string>();
-          const seenTitles = new Set<string>();
 
           snap.forEach((docSnap) => {
-            const data = docSnap.data() as Omit<AppItem, 'id'>;
-            const normTitle = (data.title || '').trim().toLowerCase();
-            if (!seenIds.has(docSnap.id) && !seenTitles.has(normTitle)) {
+            if (!seenIds.has(docSnap.id)) {
               seenIds.add(docSnap.id);
-              seenTitles.add(normTitle);
-              items.push({ id: docSnap.id, ...data });
+              items.push({ id: docSnap.id, ...(docSnap.data() as Omit<AppItem, 'id'>) });
             }
           });
 
@@ -375,22 +372,18 @@ export default function App() {
       (err) => console.warn('Firestore apps snapshot warning:', err)
     );
 
-    // 2. Websites Listener (Deduplicated)
+    // 2. Websites Listener
     const unsubWeb = onSnapshot(
       collection(db, WEBSITES_COLLECTION),
       (snap) => {
         if (!snap.empty) {
           const items: WebsiteItem[] = [];
           const seenIds = new Set<string>();
-          const seenTitles = new Set<string>();
 
           snap.forEach((docSnap) => {
-            const data = docSnap.data() as Omit<WebsiteItem, 'id'>;
-            const normTitle = (data.title || '').trim().toLowerCase();
-            if (!seenIds.has(docSnap.id) && !seenTitles.has(normTitle)) {
+            if (!seenIds.has(docSnap.id)) {
               seenIds.add(docSnap.id);
-              seenTitles.add(normTitle);
-              items.push({ id: docSnap.id, ...data });
+              items.push({ id: docSnap.id, ...(docSnap.data() as Omit<WebsiteItem, 'id'>) });
             }
           });
 
@@ -413,22 +406,18 @@ export default function App() {
       (err) => console.warn('Firestore websites snapshot warning:', err)
     );
 
-    // 3. Skills Listener (Deduplicated)
+    // 3. Skills Listener
     const unsubSkills = onSnapshot(
       collection(db, SKILLS_COLLECTION),
       (snap) => {
         if (!snap.empty) {
           const items: SkillItem[] = [];
           const seenIds = new Set<string>();
-          const seenNames = new Set<string>();
 
           snap.forEach((docSnap) => {
-            const data = docSnap.data() as Omit<SkillItem, 'id'>;
-            const normName = (data.name || '').trim().toLowerCase();
-            if (!seenIds.has(docSnap.id) && !seenNames.has(normName)) {
+            if (!seenIds.has(docSnap.id)) {
               seenIds.add(docSnap.id);
-              seenNames.add(normName);
-              items.push({ id: docSnap.id, ...data });
+              items.push({ id: docSnap.id, ...(docSnap.data() as Omit<SkillItem, 'id'>) });
             }
           });
 
@@ -599,15 +588,17 @@ export default function App() {
   // ROUTE 3: MAIN LANDING PAGE
   return (
     <div className="min-h-screen bg-black text-white selection:bg-blue-600 selection:text-white relative">
+      {/* Desktop Secondary Subtle Following Ring (Desktop fine pointer only) */}
+      <CustomCursor />
       
       {/* ===================== FIXED DISTINCT TOP BAR (NEVER SCROLLS AWAY) ===================== */}
-      <header className="fixed top-0 left-0 right-0 z-40 bg-[#0c0c11]/95 border-b border-[#1f202b] px-4 sm:px-8 py-3.5 backdrop-blur-md shadow-lg shadow-black/50">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <header className="fixed top-0 left-0 right-0 z-40 bg-[#0c0c11]/95 border-b border-[#1f202b] px-4 sm:px-6 lg:px-8 py-3.5 backdrop-blur-md shadow-lg shadow-black/50">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           
           {/* Brand Logo */}
           <div
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="flex items-center gap-1.5 cursor-pointer select-none group"
+            className="flex items-center gap-1.5 cursor-pointer select-none group shrink-0"
             title="KN Builders"
           >
             <span className="text-2xl font-black tracking-tight text-[#3b82f6] group-hover:brightness-125 transition-all">
@@ -618,24 +609,50 @@ export default function App() {
             </span>
           </div>
 
-          {/* Right Action Icons: Real WhatsApp CTA + 3-Lines Menu */}
-          <div className="flex items-center gap-2.5">
+          {/* Full Desktop Navigation Links (Windows Desktop & Laptop Screens) */}
+          <nav className="hidden md:flex items-center gap-1 lg:gap-2">
+            {NAV_SECTIONS.map((item) => {
+              const isActive = activeSection === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    if (item.id === 'home') {
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } else {
+                      scrollToSection(item.id);
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs lg:text-sm font-semibold transition-all duration-200 cursor-pointer nav-link-desktop ${
+                    isActive
+                      ? 'text-white font-bold bg-[#181826] active-nav text-blue-400'
+                      : 'text-slate-400 hover:text-white hover:bg-[#12131d]'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Right Action Icons: Real WhatsApp CTA + Mobile 3-Lines Menu */}
+          <div className="flex items-center gap-2.5 shrink-0">
             {/* Real WhatsApp Quick Header Button */}
             <button
               onClick={openWhatsAppChat}
               title="Chat on WhatsApp"
               aria-label="Direct WhatsApp"
-              className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#16271c] hover:bg-[#1d3525] border border-[#25d366]/40 text-emerald-400 text-xs font-bold transition-all duration-300 hover:scale-[1.04] active:scale-95 cursor-pointer shadow-[0_0_15px_rgba(37,211,102,0.3)]"
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#16271c] hover:bg-[#1d3525] border border-[#25d366]/40 text-emerald-400 text-xs font-bold transition-all duration-300 hover:scale-[1.04] active:scale-95 cursor-pointer shadow-[0_0_15px_rgba(37,211,102,0.3)] btn-interactive"
             >
               <WhatsAppLogo className="w-5 h-5 shrink-0" />
               <span className="hidden sm:inline">WhatsApp</span>
             </button>
 
-            {/* 3-Lines Hamburger Menu Button */}
+            {/* 3-Lines Hamburger Menu Button (Mobile / Tablet Screens Only) */}
             <button
               onClick={() => setIsMenuOpen(true)}
               aria-label="Open Navigation Menu"
-              className="w-10 h-10 rounded-2xl bg-[#1b1c26] hover:bg-[#242533] border border-[#2a2b3d] flex items-center justify-center text-white transition-all duration-200 active:scale-95 cursor-pointer"
+              className="md:hidden w-10 h-10 rounded-2xl bg-[#1b1c26] hover:bg-[#242533] border border-[#2a2b3d] flex items-center justify-center text-white transition-all duration-200 active:scale-95 cursor-pointer"
             >
               <Menu className="w-5 h-5 text-slate-200" />
             </button>
@@ -713,12 +730,12 @@ export default function App() {
         </div>
       )}
 
-      {/* ===================== MAIN CONTENT CONTAINER (SINGLE UNIFIED SCROLLBAR) ===================== */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 pb-12">
-        <div className="md:grid md:grid-cols-12 md:gap-8 lg:gap-12 items-start">
+      {/* ===================== MAIN CONTENT CONTAINER (WINDOWS DESKTOP RESPONSIVE LAYOUT) ===================== */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 pt-20 sm:pt-24 pb-16">
+        <div className="md:grid md:grid-cols-12 md:gap-8 lg:gap-10 xl:gap-12 items-start">
           
-          {/* ==================== LEFT COLUMN ==================== */}
-          <div id="home" className="md:col-span-5 lg:col-span-5 space-y-7">
+          {/* ==================== LEFT COLUMN (STICKY ANCHOR ON LARGE SCREENS) ==================== */}
+          <div id="home" className="md:col-span-5 lg:col-span-5 space-y-6 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto no-scrollbar pr-1">
             
             {/* Status Badge */}
             <div className="slide-right-enter">
@@ -730,7 +747,7 @@ export default function App() {
 
             {/* Main Headline */}
             <div className="space-y-2 slide-right-enter delay-75">
-              <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-black tracking-tight leading-[1.12]">
+              <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-black tracking-tight leading-[1.14]">
                 <span>Hello! Welcome</span>
                 <br />
                 <span>to </span>
@@ -738,7 +755,7 @@ export default function App() {
                   KN Builders
                 </span>
               </h1>
-              <p className="text-base text-slate-400 font-normal pt-1.5 leading-relaxed">
+              <p className="text-sm sm:text-base text-slate-400 font-normal pt-1 leading-relaxed">
                 We design and build apps, websites and creative visuals, from idea to launch.
               </p>
             </div>
@@ -747,7 +764,7 @@ export default function App() {
             <div className="grid grid-cols-2 gap-3 pt-1 slide-right-enter delay-150">
               <button
                 onClick={openWhatsAppChat}
-                className="w-full bg-[#25D366] hover:bg-[#1fb355] text-white font-bold py-3.5 px-3 sm:px-5 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-green-600/30 transition-all duration-300 hover:scale-[1.05] hover:shadow-[0_0_25px_rgba(37,211,102,0.5)] active:scale-[0.98] cursor-pointer text-xs sm:text-sm text-center mouse-hover-card"
+                className="w-full bg-[#25D366] hover:bg-[#1fb355] text-white font-bold py-3.5 px-3 sm:px-5 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-green-600/30 transition-all duration-300 active:scale-[0.98] cursor-pointer text-xs sm:text-sm text-center btn-interactive"
               >
                 <WhatsAppLogo className="w-5 h-5 shrink-0" />
                 <span className="truncate">Want an app?</span>
@@ -755,29 +772,29 @@ export default function App() {
 
               <button
                 onClick={() => scrollToSection('apps-section')}
-                className="w-full py-3.5 px-3 sm:px-5 rounded-2xl text-xs sm:text-sm font-semibold transition-all duration-300 hover:scale-[1.05] hover:border-blue-500/80 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] active:scale-[0.98] cursor-pointer bg-[#0f0f15] hover:bg-[#161622] border border-[#22222e] text-slate-200 text-center flex items-center justify-center mouse-hover-card"
+                className="w-full py-3.5 px-3 sm:px-5 rounded-2xl text-xs sm:text-sm font-semibold transition-all duration-300 active:scale-[0.98] cursor-pointer bg-[#0f0f15] hover:bg-[#161622] border border-[#22222e] text-slate-200 text-center flex items-center justify-center btn-interactive"
               >
                 <span>See our work</span>
               </button>
             </div>
 
             {/* 3 Stat Metrics Grid */}
-            <div className="grid grid-cols-3 gap-3 pt-2">
-              <div className="rounded-2xl p-4 flex flex-col items-center justify-center text-center bg-[#0d0d12] border border-[#20202c] slide-right-enter delay-150 mouse-hover-card">
+            <div className="grid grid-cols-3 gap-3 pt-1">
+              <div className="rounded-2xl p-4 flex flex-col items-center justify-center text-center bg-[#0d0d12] border border-[#20202c] slide-right-enter delay-150 interactive-card">
                 <span className="text-3xl sm:text-4xl font-black text-[#38bdf8] tracking-tight">
                   {apps.length}
                 </span>
                 <span className="text-xs font-semibold text-slate-400 mt-1.5">Apps built</span>
               </div>
 
-              <div className="rounded-2xl p-4 flex flex-col items-center justify-center text-center bg-[#0d0d12] border border-[#20202c] slide-right-enter delay-225 mouse-hover-card">
+              <div className="rounded-2xl p-4 flex flex-col items-center justify-center text-center bg-[#0d0d12] border border-[#20202c] slide-right-enter delay-225 interactive-card">
                 <span className="text-3xl sm:text-4xl font-black text-[#38bdf8] tracking-tight">
                   {websites.length}
                 </span>
                 <span className="text-xs font-semibold text-slate-400 mt-1.5">Websites</span>
               </div>
 
-              <div className="rounded-2xl p-4 flex flex-col items-center justify-center text-center bg-[#0d0d12] border border-[#20202c] slide-right-enter delay-300 mouse-hover-card">
+              <div className="rounded-2xl p-4 flex flex-col items-center justify-center text-center bg-[#0d0d12] border border-[#20202c] slide-right-enter delay-300 interactive-card">
                 <span className="text-3xl sm:text-4xl font-black text-[#2563eb] tracking-tight">
                   24/7
                 </span>
@@ -786,9 +803,9 @@ export default function App() {
             </div>
 
             {/* ===================== SKILLS SECTION (Step 2 in sequence) ===================== */}
-            <div id="skills-section" className="space-y-4 pt-4">
+            <div id="skills-section" className="space-y-4 pt-3">
               <div className="flex items-center justify-between slide-right-enter">
-                <h2 className="text-2xl font-black tracking-tight">Skills</h2>
+                <h2 className="text-xl sm:text-2xl font-black tracking-tight">Skills</h2>
                 <span className="text-xs text-blue-400 font-semibold">{skills.length} Technologies</span>
               </div>
 
@@ -797,9 +814,9 @@ export default function App() {
                 {skills.map((skill, index) => (
                   <div
                     key={skill.id}
-                    className={`p-4 rounded-2xl bg-[#0e0e14] border border-[#20202c] flex items-center gap-3 group select-none slide-right-enter delay-${(index % 4) * 75 + 75} mouse-hover-card`}
+                    className={`p-3.5 sm:p-4 rounded-2xl bg-[#0e0e14] border border-[#20202c] flex items-center gap-3 group select-none slide-right-enter delay-${(index % 4) * 75 + 75} interactive-card`}
                   >
-                    <div className="w-11 h-11 rounded-xl bg-[#161622] border border-[#262636] group-hover:border-blue-500/60 flex items-center justify-center shrink-0 transition-colors">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#161622] border border-[#262636] group-hover:border-blue-500/60 flex items-center justify-center shrink-0 transition-colors">
                       {getSkillIcon(skill.iconType, 'w-5 h-5')}
                     </div>
                     <div className="overflow-hidden">
@@ -814,7 +831,7 @@ export default function App() {
             </div>
 
             {/* Services Guarantee Box */}
-            <div className="p-4 rounded-2xl bg-[#09090f] border border-[#1b1b26] space-y-2 slide-right-enter delay-225 mouse-hover-card">
+            <div className="p-4 rounded-2xl bg-[#09090f] border border-[#1b1b26] space-y-2 slide-right-enter delay-225 interactive-card">
               <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                 <span>Production Quality Guarantee</span>
@@ -827,7 +844,7 @@ export default function App() {
           </div>
 
           {/* ==================== RIGHT COLUMN ==================== */}
-          <div className="md:col-span-7 lg:col-span-7 space-y-14 mt-12 md:mt-0">
+          <div className="md:col-span-7 lg:col-span-7 space-y-12 lg:space-y-14 mt-12 md:mt-0">
 
             {/* ===================== APPS SECTION (Step 3 in sequence) ===================== */}
             <section
@@ -911,7 +928,7 @@ export default function App() {
                             e.stopPropagation();
                             navigateToApp(app);
                           }}
-                          className="px-4 py-2 rounded-xl bg-blue-600/15 hover:bg-blue-600 border border-blue-500/30 hover:border-blue-500 text-xs font-bold text-blue-400 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 shrink-0"
+                          className="px-4 py-2 rounded-xl bg-blue-600/15 hover:bg-blue-600 border border-blue-500/30 hover:border-blue-500 text-xs font-bold text-blue-400 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 shrink-0 btn-interactive"
                         >
                           <Eye className="w-3.5 h-3.5" />
                           <span>View App</span>
@@ -944,7 +961,7 @@ export default function App() {
                   {websites.map((web, index) => (
                     <div
                       key={web.id}
-                      className={`p-5 rounded-2xl bg-[#0e0e15] border border-[#20202c] flex flex-col justify-between slide-right-enter delay-${(index % 4) * 75 + 100} mouse-hover-card`}
+                      className={`p-5 rounded-2xl bg-[#0e0e15] border border-[#20202c] flex flex-col justify-between slide-right-enter delay-${(index % 4) * 75 + 100} interactive-card`}
                     >
                       <div>
                         <h3 className="font-bold text-base text-white">{web.title}</h3>
@@ -958,7 +975,7 @@ export default function App() {
                             href={web.liveUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-blue-600/30 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer shrink-0"
+                            className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-blue-600/30 transition-all duration-300 active:scale-95 cursor-pointer shrink-0 btn-interactive"
                           >
                             <span>Visit Website</span>
                             <ExternalLink className="w-4 h-4" />
@@ -988,7 +1005,7 @@ export default function App() {
                 {steps.map((step, index) => (
                   <div
                     key={step.num}
-                    className={`rounded-2xl p-4.5 flex items-center gap-4 bg-[#0d0d12] border border-[#1f1f2c] slide-right-enter delay-${index * 75 + 75} mouse-hover-card`}
+                    className={`rounded-2xl p-4.5 flex items-center gap-4 bg-[#0d0d12] border border-[#1f1f2c] slide-right-enter delay-${index * 75 + 75} interactive-card`}
                   >
                     <div className="w-9 h-9 rounded-full bg-[#2563eb] text-white font-extrabold text-sm flex items-center justify-center shrink-0 shadow-md shadow-blue-600/30">
                       {step.num}
@@ -1017,7 +1034,7 @@ export default function App() {
                     <div
                       key={index}
                       onClick={() => toggleFaq(index)}
-                      className={`rounded-2xl p-4 cursor-pointer bg-[#0d0d12] border border-[#1f1f2c] select-none slide-right-enter delay-${index * 75 + 75} mouse-hover-card`}
+                      className={`rounded-2xl p-4 cursor-pointer bg-[#0d0d12] border border-[#1f1f2c] select-none slide-right-enter delay-${index * 75 + 75} interactive-card`}
                     >
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-blue-400 font-bold">{isOpen ? '▼' : '▶'}</span>
@@ -1050,7 +1067,7 @@ export default function App() {
                   <button
                     onClick={openWhatsAppChat}
                     type="button"
-                    className="bg-[#25D366] hover:bg-[#1fb355] text-white p-4.5 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-md shadow-green-600/30 cursor-pointer min-h-[96px] mouse-hover-card"
+                    className="bg-[#25D366] hover:bg-[#1fb355] text-white p-4.5 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-md shadow-green-600/30 cursor-pointer min-h-[96px] interactive-card"
                   >
                     <WhatsAppLogo className="w-6 h-6 shrink-0" />
                     <span className="text-sm font-bold">WhatsApp</span>
@@ -1062,7 +1079,7 @@ export default function App() {
                     onClick={openMail}
                     type="button"
                     title={`Send email to ${CONTACT_EMAIL}`}
-                    className="p-4.5 rounded-2xl flex flex-col items-center justify-center gap-2 bg-[#14141c] hover:bg-[#1c1c28] border border-[#262636] text-white font-medium text-sm min-h-[96px] cursor-pointer mouse-hover-card"
+                    className="p-4.5 rounded-2xl flex flex-col items-center justify-center gap-2 bg-[#14141c] hover:bg-[#1c1c28] border border-[#262636] text-white font-medium text-sm min-h-[96px] cursor-pointer interactive-card"
                   >
                     <EmailEnvelopeIcon className="w-6 h-6 shrink-0" />
                     <span className="text-sm font-bold">Send Mail</span>
@@ -1191,7 +1208,7 @@ export default function App() {
                     <button
                       type="submit"
                       disabled={isSavingInquiry}
-                      className="w-full bg-gradient-to-r from-[#2563eb] via-[#4f46e5] to-[#8b5cf6] hover:from-[#1d4ed8] hover:to-[#7c3aed] text-white font-bold py-4 px-6 rounded-2xl shadow-lg shadow-indigo-600/25 active:scale-[0.99] transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_0_25px_rgba(99,102,241,0.5)] cursor-pointer text-center text-sm sm:text-base mt-2 flex items-center justify-center gap-2 mouse-hover-card"
+                      className="w-full bg-gradient-to-r from-[#2563eb] via-[#4f46e5] to-[#8b5cf6] hover:from-[#1d4ed8] hover:to-[#7c3aed] text-white font-bold py-4 px-6 rounded-2xl shadow-lg shadow-indigo-600/25 active:scale-[0.99] transition-all duration-300 cursor-pointer text-center text-sm sm:text-base mt-2 flex items-center justify-center gap-2 btn-interactive"
                     >
                       <Send className="w-4 h-4" />
                       <span>{isSavingInquiry ? 'Sending...' : 'Send message'}</span>
@@ -1219,7 +1236,7 @@ export default function App() {
           type="button"
           title="Direct WhatsApp Chat"
           aria-label="Direct WhatsApp Chat"
-          className="w-14 h-14 rounded-full bg-[#25D366] hover:bg-[#1fb355] text-white flex items-center justify-center shadow-[0_4px_28px_rgba(37,211,102,0.6)] hover:scale-110 active:scale-95 transition-all duration-300 cursor-pointer"
+          className="w-14 h-14 rounded-full bg-[#25D366] hover:bg-[#1fb355] text-white flex items-center justify-center shadow-[0_4px_28px_rgba(37,211,102,0.6)] cursor-pointer btn-interactive"
         >
           <WhatsAppLogo className="w-8 h-8" />
         </button>

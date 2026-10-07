@@ -13,7 +13,9 @@
         "apkSize": { "type": "string", "maxLength": 50 },
         "category": { "type": "string", "maxLength": 50 },
         "version": { "type": "string", "maxLength": 20 },
-        "screenshots": { "type": "string", "maxLength": 3000 },
+        "screenshots": { "type": "string", "maxLength": 500000 },
+        "platforms": { "type": "array" },
+        "createdAtTimestamp": { "type": "number" },
         "createdAt": { "type": "string", "maxLength": 50 }
       },
       "required": ["title", "description"]

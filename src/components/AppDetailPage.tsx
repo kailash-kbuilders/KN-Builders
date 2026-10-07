@@ -254,7 +254,7 @@ export default function AppDetailPage({ app, onBack, whatsappUrl }: AppDetailPag
               <div className="pt-4 flex flex-col sm:flex-row items-center gap-3">
                 <button
                   onClick={handleDownloadApp}
-                  className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-[#25D366] hover:bg-[#1fb355] text-white font-bold text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-green-600/30 transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] cursor-pointer"
+                  className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-[#25D366] hover:bg-[#1fb355] text-white font-bold text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-green-600/30 transition-all duration-300 active:scale-[0.98] cursor-pointer btn-interactive"
                 >
                   <Download className="w-5 h-5" />
                   <span>Download App ({app.apkSize || '18 MB'})</span>
@@ -264,7 +264,7 @@ export default function AppDetailPage({ app, onBack, whatsappUrl }: AppDetailPag
                   href={`${whatsappUrl}%20-%20Regarding%20${encodeURIComponent(app.title)}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-[#171722] hover:bg-[#20202e] border border-[#2b2b3d] text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-300 hover:scale-[1.03] active:scale-[0.98]"
+                  className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-[#171722] hover:bg-[#20202e] border border-[#2b2b3d] text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98] btn-interactive"
                 >
                   <WhatsAppLogo className="w-4 h-4" />
                   <span>Chat with Developer</span>
@@ -368,78 +368,59 @@ export default function AppDetailPage({ app, onBack, whatsappUrl }: AppDetailPag
           </div>
         </div>
 
-        {/* ===================== SUPPORTED PLATFORMS (REAL LOGOS) ===================== */}
-        <div className="p-6 rounded-3xl bg-[#0e0e15] border border-[#20202c] space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white">Supported Platforms</h2>
-            <span className="text-xs text-blue-400 font-semibold">Verified Device Compatibility</span>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {/* Android Card */}
-            <div
-              className={`p-4 rounded-2xl border flex items-center gap-3.5 transition-all ${
-                (app.platforms && app.platforms.includes('android')) || (!app.platforms || app.platforms.length === 0)
-                  ? 'bg-emerald-950/40 border-emerald-500/50 text-white shadow-sm'
-                  : 'bg-[#121218] border-[#22222e] text-slate-500 opacity-60'
-              }`}
-            >
-              <div className="w-11 h-11 rounded-xl bg-[#16271c] border border-emerald-500/30 flex items-center justify-center shrink-0">
-                <AndroidLogo className="w-6 h-6 shrink-0" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-white">Android</h4>
-                <p className="text-[11px] text-slate-400">
-                  {(app.platforms && app.platforms.includes('android')) || (!app.platforms || app.platforms.length === 0)
-                    ? 'Supported (APK / Mobile)'
-                    : 'Not supported'}
-                </p>
-              </div>
-            </div>
+        {/* ===================== SUPPORTED PLATFORMS (ONLY ACTIVE PLATFORMS) ===================== */}
+        {(() => {
+          const activePlats = app.platforms && Array.isArray(app.platforms) && app.platforms.length > 0
+            ? app.platforms
+            : ['android'];
 
-            {/* Windows Card */}
-            <div
-              className={`p-4 rounded-2xl border flex items-center gap-3.5 transition-all ${
-                app.platforms?.includes('windows')
-                  ? 'bg-blue-950/40 border-blue-500/50 text-white shadow-sm'
-                  : 'bg-[#121218] border-[#22222e] text-slate-500 opacity-60'
-              }`}
-            >
-              <div className="w-11 h-11 rounded-xl bg-[#0f2338] border border-blue-500/30 flex items-center justify-center shrink-0">
-                <WindowsLogo className="w-6 h-6 shrink-0" />
+          return (
+            <div className="p-6 rounded-3xl bg-[#0e0e15] border border-[#20202c] space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-white">Supported Platforms</h2>
+                <span className="text-xs text-blue-400 font-semibold">{activePlats.length} Platform{activePlats.length > 1 ? 's' : ''} Available</span>
               </div>
-              <div>
-                <h4 className="text-sm font-bold text-white">Windows</h4>
-                <p className="text-[11px] text-slate-400">
-                  {app.platforms?.includes('windows')
-                    ? 'Supported (PC / Desktop)'
-                    : 'Not supported'}
-                </p>
-              </div>
-            </div>
+              
+              <div className={`grid grid-cols-1 ${activePlats.length === 2 ? 'sm:grid-cols-2' : activePlats.length >= 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-1 max-w-sm'} gap-3`}>
+                {activePlats.includes('android') && (
+                  <div className="p-4 rounded-2xl border bg-emerald-950/40 border-emerald-500/50 text-white shadow-sm flex items-center gap-3.5 interactive-card">
+                    <div className="w-11 h-11 rounded-xl bg-[#16271c] border border-emerald-500/30 flex items-center justify-center shrink-0">
+                      <AndroidLogo className="w-6 h-6 shrink-0" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-white">Android</h4>
+                      <p className="text-[11px] text-emerald-400 font-medium">Supported (APK / Mobile)</p>
+                    </div>
+                  </div>
+                )}
 
-            {/* Apple Card */}
-            <div
-              className={`p-4 rounded-2xl border flex items-center gap-3.5 transition-all ${
-                app.platforms?.includes('apple')
-                  ? 'bg-slate-850/60 border-slate-400/50 text-white shadow-sm'
-                  : 'bg-[#121218] border-[#22222e] text-slate-500 opacity-60'
-              }`}
-            >
-              <div className="w-11 h-11 rounded-xl bg-[#1c1c24] border border-slate-600 flex items-center justify-center shrink-0">
-                <AppleLogo className="w-6 h-6 shrink-0" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-white">Apple</h4>
-                <p className="text-[11px] text-slate-400">
-                  {app.platforms?.includes('apple')
-                    ? 'Supported (iOS / Mac)'
-                    : 'Not supported'}
-                </p>
+                {activePlats.includes('windows') && (
+                  <div className="p-4 rounded-2xl border bg-blue-950/40 border-blue-500/50 text-white shadow-sm flex items-center gap-3.5 interactive-card">
+                    <div className="w-11 h-11 rounded-xl bg-[#0f2338] border border-blue-500/30 flex items-center justify-center shrink-0">
+                      <WindowsLogo className="w-6 h-6 shrink-0" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-white">Windows</h4>
+                      <p className="text-[11px] text-[#38bdf8] font-medium">Supported (PC / Desktop)</p>
+                    </div>
+                  </div>
+                )}
+
+                {activePlats.includes('apple') && (
+                  <div className="p-4 rounded-2xl border bg-slate-850/60 border-slate-400/50 text-white shadow-sm flex items-center gap-3.5 interactive-card">
+                    <div className="w-11 h-11 rounded-xl bg-[#1c1c24] border border-slate-600 flex items-center justify-center shrink-0">
+                      <AppleLogo className="w-6 h-6 shrink-0" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-white">Apple</h4>
+                      <p className="text-[11px] text-slate-300 font-medium">Supported (iOS / Mac)</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
-        </div>
+          );
+        })()}
 
         {/* Installation Guide Accordion */}
         <div className="rounded-2xl bg-[#0e0e15] border border-[#20202c] overflow-hidden">

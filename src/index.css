@@ -99,20 +99,93 @@ html::-webkit-scrollbar-thumb:hover {
 .delay-450 { transition-delay: 360ms; }
 
 /* ==========================================================================
-   CLEAN SUBTLE CARD HOVER (Standard desktop hover, no touch stickiness)
+   PREMIUM DESKTOP MOUSE HOVER INTERACTIONS
+   Smooth modern interaction system: 200-300ms ease-out, transform-based (no layout shift)
    ========================================================================== */
 @media (hover: hover) and (pointer: fine) {
-  .mouse-hover-card {
-    transition: border-color 0.25s ease, background-color 0.25s ease;
+  /* Interactive Buttons & CTAs */
+  .btn-interactive,
+  button:not(:disabled):not(.no-hover-lift),
+  [role="button"]:not([aria-disabled="true"]):not(.no-hover-lift) {
+    transition: transform 250ms cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 250ms ease-out,
+                background-color 200ms ease-out,
+                border-color 200ms ease-out,
+                color 200ms ease-out;
+    cursor: pointer;
   }
 
+  .btn-interactive:hover,
+  button:not(:disabled):not(.no-hover-lift):hover {
+    transform: translateY(-2px) scale(1.03);
+  }
+
+  .btn-interactive:active,
+  button:not(:disabled):not(.no-hover-lift):active {
+    transform: translateY(0) scale(0.98);
+    transition-duration: 100ms;
+  }
+
+  /* Interactive Cards */
+  .interactive-card,
+  .mouse-hover-card {
+    transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 280ms ease-out,
+                border-color 220ms ease-out,
+                background-color 220ms ease-out;
+    will-change: transform;
+    cursor: pointer;
+  }
+
+  .interactive-card:hover,
   .mouse-hover-card:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 14px 30px -10px rgba(0, 0, 0, 0.7), 0 0 20px 0 rgba(59, 130, 246, 0.12);
     border-color: rgba(96, 165, 250, 0.45);
+  }
+
+  /* Nav Links Desktop Hover Indicator */
+  .nav-link-desktop {
+    position: relative;
+    transition: color 200ms ease-out, background-color 200ms ease-out, transform 200ms ease-out;
+    cursor: pointer;
+  }
+
+  .nav-link-desktop:hover {
+    transform: translateY(-1px);
+    color: #ffffff;
+  }
+
+  .nav-link-desktop::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #3b82f6, #60a5fa);
+    border-radius: 9999px;
+    transition: width 220ms cubic-bezier(0.16, 1, 0.3, 1), left 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .nav-link-desktop:hover::after {
+    width: 70%;
+    left: 15%;
+  }
+
+  .nav-link-desktop.active-nav::after {
+    width: 80%;
+    left: 10%;
   }
 }
 
+/* Touch device overrides (no sticky hover states) */
 @media (hover: none), (pointer: coarse) {
-  .mouse-hover-card {
+  .btn-interactive,
+  button,
+  .interactive-card,
+  .mouse-hover-card,
+  .nav-link-desktop {
     transform: none !important;
     box-shadow: none !important;
   }
@@ -121,3 +194,28 @@ html::-webkit-scrollbar-thumb:hover {
     -webkit-tap-highlight-color: transparent !important;
   }
 }
+
+/* Accessible focus visible states */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #3b82f6 !important;
+  outline-offset: 2px !important;
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+    transform: none !important;
+  }
+  .slide-right-enter {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
