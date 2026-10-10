@@ -734,88 +734,187 @@ export default function App() {
       <main className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 pb-16 site-container">
         <div className="md:grid md:grid-cols-12 md:gap-8 lg:gap-10 xl:gap-12 items-start">
           
-          {/* ==================== LEFT COLUMN (50% DESKTOP: HOME, WEBSITES, CONTACT) ==================== */}
-          <div className="md:col-span-6 lg:col-span-6 space-y-12">
+          {/* ==================== LEFT COLUMN (STICKY ANCHOR ON LARGE SCREENS) ==================== */}
+          <div id="home" className="md:col-span-5 lg:col-span-5 space-y-6 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto no-scrollbar pr-1">
             
-            {/* Status Badge, Main Headline, Action Buttons, 3 Stat Metrics */}
-            <div id="home" className="space-y-6">
-              {/* Status Badge */}
-              <div className="slide-right-enter">
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-[#0f0f15] border border-[#22222e] text-slate-300 shadow-sm transition-all duration-300 hover:border-emerald-500/50">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#16a34a] inline-block shadow-[0_0_10px_#22c55e] animate-pulse" />
-                  <span>Open for new projects</span>
-                </div>
-              </div>
-
-              {/* Main Headline */}
-              <div className="space-y-2 slide-right-enter delay-75">
-                <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-black tracking-tight leading-[1.14]">
-                  <span>Hello! Welcome</span>
-                  <br />
-                  <span>to </span>
-                  <span className="bg-gradient-to-r from-[#3b82f6] via-[#60a5fa] to-[#a855f7] bg-clip-text text-transparent">
-                    KN Builders
-                  </span>
-                </h1>
-                <p className="text-sm sm:text-base text-slate-400 font-normal pt-1 leading-relaxed">
-                  We design and build apps, websites and creative visuals, from idea to launch.
-                </p>
-              </div>
-
-              {/* Primary Action Buttons */}
-              <div className="grid grid-cols-2 gap-3 pt-1 slide-right-enter delay-150">
-                <button
-                  onClick={openWhatsAppChat}
-                  className="w-full bg-[#25D366] hover:bg-[#1fb355] text-white font-bold py-3.5 px-3 sm:px-5 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-green-600/30 transition-all duration-300 active:scale-[0.98] cursor-pointer text-xs sm:text-sm text-center btn-interactive"
-                >
-                  <WhatsAppLogo className="w-5 h-5 shrink-0" />
-                  <span className="truncate">Want an app?</span>
-                </button>
-
-                <button
-                  onClick={() => scrollToSection('apps-section')}
-                  className="w-full py-3.5 px-3 sm:px-5 rounded-2xl text-xs sm:text-sm font-semibold transition-all duration-300 active:scale-[0.98] cursor-pointer bg-[#0f0f15] hover:bg-[#161622] border border-[#22222e] text-slate-200 text-center flex items-center justify-center btn-interactive"
-                >
-                  <span>See our work</span>
-                </button>
-              </div>
-
-              {/* 3 Stat Metrics Grid */}
-              <div className="grid grid-cols-3 gap-3 pt-1">
-                <div className="rounded-2xl p-4 flex flex-col items-center justify-center text-center bg-[#0d0d12] border border-[#20202c] slide-right-enter delay-150 interactive-card">
-                  <span className="text-3xl sm:text-4xl font-black text-[#38bdf8] tracking-tight">
-                    {apps.length}
-                  </span>
-                  <span className="text-xs font-semibold text-slate-400 mt-1.5">Apps built</span>
-                </div>
-
-                <div className="rounded-2xl p-4 flex flex-col items-center justify-center text-center bg-[#0d0d12] border border-[#20202c] slide-right-enter delay-225 interactive-card">
-                  <span className="text-3xl sm:text-4xl font-black text-[#38bdf8] tracking-tight">
-                    {websites.length}
-                  </span>
-                  <span className="text-xs font-semibold text-slate-400 mt-1.5">Websites</span>
-                </div>
-
-                <div className="rounded-2xl p-4 flex flex-col items-center justify-center text-center bg-[#0d0d12] border border-[#20202c] slide-right-enter delay-300 interactive-card">
-                  <span className="text-3xl sm:text-4xl font-black text-[#2563eb] tracking-tight">
-                    24/7
-                  </span>
-                  <span className="text-xs font-semibold text-slate-400 mt-1.5">Remote</span>
-                </div>
+            {/* Status Badge */}
+            <div className="slide-right-enter">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-[#0f0f15] border border-[#22222e] text-slate-300 shadow-sm transition-all duration-300 hover:border-emerald-500/50">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#16a34a] inline-block shadow-[0_0_10px_#22c55e] animate-pulse" />
+                <span>Open for new projects</span>
               </div>
             </div>
 
-            {/* ===================== WEBSITES SECTION ===================== */}
+            {/* Main Headline */}
+            <div className="space-y-2 slide-right-enter delay-75">
+              <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-black tracking-tight leading-[1.14]">
+                <span>Hello! Welcome</span>
+                <br />
+                <span>to </span>
+                <span className="bg-gradient-to-r from-[#3b82f6] via-[#60a5fa] to-[#a855f7] bg-clip-text text-transparent">
+                  KN Builders
+                </span>
+              </h1>
+              <p className="text-sm sm:text-base text-slate-400 font-normal pt-1 leading-relaxed">
+                We design and build apps, websites and creative visuals, from idea to launch.
+              </p>
+            </div>
+
+            {/* Primary Action Buttons */}
+            <div className="grid grid-cols-2 gap-3 pt-1 slide-right-enter delay-150">
+              <button
+                onClick={openWhatsAppChat}
+                className="w-full bg-[#25D366] hover:bg-[#1fb355] text-white font-bold py-3.5 px-3 sm:px-5 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-green-600/30 transition-all duration-300 active:scale-[0.98] cursor-pointer text-xs sm:text-sm text-center btn-interactive"
+              >
+                <WhatsAppLogo className="w-5 h-5 shrink-0" />
+                <span className="truncate">Want an app?</span>
+              </button>
+
+              <button
+                onClick={() => scrollToSection('apps-section')}
+                className="w-full py-3.5 px-3 sm:px-5 rounded-2xl text-xs sm:text-sm font-semibold transition-all duration-300 active:scale-[0.98] cursor-pointer bg-[#0f0f15] hover:bg-[#161622] border border-[#22222e] text-slate-200 text-center flex items-center justify-center btn-interactive"
+              >
+                <span>See our work</span>
+              </button>
+            </div>
+
+            {/* 3 Stat Metrics Grid */}
+            <div className="grid grid-cols-3 gap-3 pt-1">
+              <div className="rounded-2xl p-4 flex flex-col items-center justify-center text-center bg-[#0d0d12] border border-[#20202c] slide-right-enter delay-150 interactive-card">
+                <span className="text-3xl sm:text-4xl font-black text-[#38bdf8] tracking-tight">
+                  {apps.length}
+                </span>
+                <span className="text-xs font-semibold text-slate-400 mt-1.5">Apps built</span>
+              </div>
+
+              <div className="rounded-2xl p-4 flex flex-col items-center justify-center text-center bg-[#0d0d12] border border-[#20202c] slide-right-enter delay-225 interactive-card">
+                <span className="text-3xl sm:text-4xl font-black text-[#38bdf8] tracking-tight">
+                  {websites.length}
+                </span>
+                <span className="text-xs font-semibold text-slate-400 mt-1.5">Websites</span>
+              </div>
+
+              <div className="rounded-2xl p-4 flex flex-col items-center justify-center text-center bg-[#0d0d12] border border-[#20202c] slide-right-enter delay-300 interactive-card">
+                <span className="text-3xl sm:text-4xl font-black text-[#2563eb] tracking-tight">
+                  24/7
+                </span>
+                <span className="text-xs font-semibold text-slate-400 mt-1.5">Remote</span>
+              </div>
+            </div>
+
+            {/* ===================== SKILLS SECTION (Step 2 in sequence) ===================== */}
+            <div id="skills-section" className="space-y-4 pt-3">
+              <div className="flex items-center justify-between slide-right-enter">
+                <h2 className="text-xl sm:text-2xl font-black tracking-tight">Skills</h2>
+                <span className="text-xs text-blue-400 font-semibold">{skills.length} Technologies</span>
+              </div>
+
+              {/* 2-column Grid */}
+              <div className="grid grid-cols-2 gap-3">
+                {skills.map((skill, index) => (
+                  <div
+                    key={skill.id}
+                    className={`p-3.5 sm:p-4 rounded-2xl bg-[#0e0e14] border border-[#20202c] flex items-center gap-3 group select-none slide-right-enter delay-${(index % 4) * 75 + 75} interactive-card`}
+                  >
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#161622] border border-[#262636] group-hover:border-blue-500/60 flex items-center justify-center shrink-0 transition-colors">
+                      {getSkillIcon(skill.iconType, 'w-5 h-5')}
+                    </div>
+                    <div className="overflow-hidden">
+                      <h3 className="font-bold text-xs sm:text-sm text-white truncate group-hover:text-blue-300 transition-colors">
+                        {skill.name}
+                      </h3>
+                      <p className="text-[10px] text-slate-400 truncate">{skill.category || 'Development'}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Services Guarantee Box */}
+            <div className="p-4 rounded-2xl bg-[#09090f] border border-[#1b1b26] space-y-2 slide-right-enter delay-225 interactive-card">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span>Production Quality Guarantee</span>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Tested on physical Android devices, high performance web stacks, clean code architecture and responsive across all screens.
+              </p>
+            </div>
+
+          </div>
+
+          {/* ==================== RIGHT COLUMN ==================== */}
+          <div className="md:col-span-7 lg:col-span-7 space-y-12 lg:space-y-14 mt-12 md:mt-0">
+
+            {/* ===================== APPS SECTION (Step 3 in sequence) ===================== */}
+            <section
+              id="apps-section"
+              className="space-y-4"
+            >
+              <div className="flex items-center justify-between slide-right-enter">
+                <div>
+                  <h2 className="text-2xl font-black tracking-tight">Apps</h2>
+                  <p className="text-xs text-slate-400">Mobile applications built and published by KN Builders</p>
+                </div>
+                <span className="text-xs text-blue-400 font-semibold">{apps.length} Apps</span>
+              </div>
+
+              {/* Search Bar */}
+              <div className="relative slide-right-enter delay-75">
+                <Search className="w-4 h-4 text-slate-500 absolute left-4 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search apps & websites..."
+                  className="w-full bg-[#0c0c12] border border-[#20202c] rounded-2xl pl-11 pr-4 py-3.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-all duration-300 hover:border-slate-700"
+                />
+              </div>
+
+              {/* Play Store Style App Grid: Only App Logo & Name on home page */}
+              {filteredApps.length > 0 ? (
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3.5 pt-1">
+                  {filteredApps.map((app, index) => (
+                    <div
+                      key={app.id}
+                      onClick={() => navigateToApp(app)}
+                      className={`group flex flex-col items-center text-center p-3 sm:p-3.5 rounded-2xl bg-[#0e0e15] hover:bg-[#141422] border border-[#20202c] hover:border-blue-500/40 select-none cursor-pointer slide-right-enter delay-${(index % 6) * 60 + 60} playstore-app-tile mouse-hover-card`}
+                      title={`Open ${app.title}`}
+                    >
+                      {/* Squircle App Logo */}
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-[#13131c] border border-[#252535] group-hover:border-blue-400 group-hover:shadow-[0_6px_22px_rgba(59,130,246,0.35)] transition-all duration-300 flex items-center justify-center mb-2 shrink-0 playstore-icon-wrap shadow-md">
+                        <img
+                          src={app.logoUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150'}
+                          alt={app.title}
+                          loading="lazy"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+
+                      {/* App Name Only */}
+                      <h3 className="font-semibold text-xs sm:text-sm text-white group-hover:text-blue-400 line-clamp-2 leading-snug tracking-tight transition-colors w-full px-0.5">
+                        {app.title}
+                      </h3>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-8 text-center bg-[#0a0a0f] border border-[#1b1b24] rounded-2xl slide-right-enter">
+                  <p className="text-sm font-medium text-slate-400">
+                    {searchQuery ? `No apps matching "${searchQuery}"` : 'Apps coming soon.'}
+                  </p>
+                </div>
+              )}
+            </section>
+
+            {/* ===================== WEBSITES SECTION (Step 4 in sequence) ===================== */}
             <section
               id="websites-section"
               className="space-y-4"
             >
               <div className="flex items-center justify-between slide-right-enter">
-                <div>
-                  <h2 className="text-2xl font-black tracking-tight">Websites</h2>
-                  <p className="text-xs text-slate-400">Web applications & platforms crafted by KN Builders</p>
-                </div>
-                <span className="text-xs text-blue-400 font-semibold">{websites.length} Projects</span>
+                <h2 className="text-2xl font-black tracking-tight">Websites</h2>
+                <span className="text-xs text-slate-400 font-semibold">{websites.length} Projects</span>
               </div>
 
               {websites.length > 0 ? (
@@ -856,7 +955,65 @@ export default function App() {
               )}
             </section>
 
-            {/* ===================== START A PROJECT / CONTACT SECTION ===================== */}
+            {/* ===================== HOW WE WORK SECTION (Step 5 in sequence) ===================== */}
+            <section
+              id="how-we-work-section"
+              className="space-y-4"
+            >
+              <h2 className="text-2xl font-black tracking-tight slide-right-enter">How we work</h2>
+
+              <div className="space-y-3">
+                {steps.map((step, index) => (
+                  <div
+                    key={step.num}
+                    className={`rounded-2xl p-4.5 flex items-center gap-4 bg-[#0d0d12] border border-[#1f1f2c] slide-right-enter delay-${index * 75 + 75} interactive-card`}
+                  >
+                    <div className="w-9 h-9 rounded-full bg-[#2563eb] text-white font-extrabold text-sm flex items-center justify-center shrink-0 shadow-md shadow-blue-600/30">
+                      {step.num}
+                    </div>
+
+                    <div>
+                      <h3 className="text-base font-bold tracking-tight">{step.title}</h3>
+                      <p className="text-xs sm:text-sm text-slate-400 mt-0.5">{step.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* ===================== FAQ SECTION (Step 6 in sequence) ===================== */}
+            <section
+              id="faq-section"
+              className="space-y-4"
+            >
+              <h2 className="text-2xl font-black tracking-tight slide-right-enter">FAQ</h2>
+
+              <div className="space-y-3">
+                {faqs.map((faq, index) => {
+                  const isOpen = openFaq === index;
+                  return (
+                    <div
+                      key={index}
+                      onClick={() => toggleFaq(index)}
+                      className={`rounded-2xl p-4 cursor-pointer bg-[#0d0d12] border border-[#1f1f2c] select-none slide-right-enter delay-${index * 75 + 75} interactive-card`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-blue-400 font-bold">{isOpen ? '▼' : '▶'}</span>
+                        <span className="text-sm sm:text-base font-semibold text-white">{faq.question}</span>
+                      </div>
+
+                      {isOpen && (
+                        <div className="mt-3 pt-3 border-t border-[#1f1f2b] text-xs sm:text-sm text-slate-300 leading-relaxed">
+                          {faq.answer}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* ===================== START A PROJECT / CONTACT SECTION (Step 7 in sequence) ===================== */}
             <section
               id="start-project"
               className="space-y-4"
@@ -1019,172 +1176,6 @@ export default function App() {
                     </button>
                   </form>
                 )}
-              </div>
-            </section>
-
-          </div>
-
-          {/* ==================== RIGHT COLUMN (50% DESKTOP: APPS, SKILLS, FAQ) ==================== */}
-          <div className="md:col-span-6 lg:col-span-6 space-y-12 mt-12 md:mt-0">
-
-            {/* ===================== APPS SECTION ===================== */}
-            <section
-              id="apps-section"
-              className="space-y-4"
-            >
-              <div className="flex items-center justify-between slide-right-enter">
-                <div>
-                  <h2 className="text-2xl font-black tracking-tight">Apps</h2>
-                  <p className="text-xs text-slate-400">Mobile applications built and published by KN Builders</p>
-                </div>
-                <span className="text-xs text-blue-400 font-semibold">{apps.length} Apps</span>
-              </div>
-
-              {/* Search Bar */}
-              <div className="relative slide-right-enter delay-75">
-                <Search className="w-4 h-4 text-slate-500 absolute left-4 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search apps & websites..."
-                  className="w-full bg-[#0c0c12] border border-[#20202c] rounded-2xl pl-11 pr-4 py-3.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-all duration-300 hover:border-slate-700"
-                />
-              </div>
-
-              {/* Play Store Style App Grid: Only App Logo & Name on home page */}
-              {filteredApps.length > 0 ? (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3.5 pt-1">
-                  {filteredApps.map((app, index) => (
-                    <div
-                      key={app.id}
-                      onClick={() => navigateToApp(app)}
-                      className={`group flex flex-col items-center text-center p-3 sm:p-3.5 rounded-2xl bg-[#0e0e15] hover:bg-[#141422] border border-[#20202c] hover:border-blue-500/40 select-none cursor-pointer slide-right-enter delay-${(index % 6) * 60 + 60} playstore-app-tile mouse-hover-card`}
-                      title={`Open ${app.title}`}
-                    >
-                      {/* Squircle App Logo */}
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-[#13131c] border border-[#252535] group-hover:border-blue-400 group-hover:shadow-[0_6px_22px_rgba(59,130,246,0.35)] transition-all duration-300 flex items-center justify-center mb-2 shrink-0 playstore-icon-wrap shadow-md">
-                        <img
-                          src={app.logoUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150'}
-                          alt={app.title}
-                          loading="lazy"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      </div>
-
-                      {/* App Name Only */}
-                      <h3 className="font-semibold text-xs sm:text-sm text-white group-hover:text-blue-400 line-clamp-2 leading-snug tracking-tight transition-colors w-full px-0.5">
-                        {app.title}
-                      </h3>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="py-8 text-center bg-[#0a0a0f] border border-[#1b1b24] rounded-2xl slide-right-enter">
-                  <p className="text-sm font-medium text-slate-400">
-                    {searchQuery ? `No apps matching "${searchQuery}"` : 'Apps coming soon.'}
-                  </p>
-                </div>
-              )}
-            </section>
-
-            {/* ===================== SKILLS & TECH SECTION ===================== */}
-            <div id="skills-section" className="space-y-4">
-              <div className="flex items-center justify-between slide-right-enter">
-                <div>
-                  <h2 className="text-2xl font-black tracking-tight">Skills & Tech</h2>
-                  <p className="text-xs text-slate-400">Core technologies we use to deliver production systems</p>
-                </div>
-                <span className="text-xs text-blue-400 font-semibold">{skills.length} Technologies</span>
-              </div>
-
-              {/* 2-column Grid */}
-              <div className="grid grid-cols-2 gap-3">
-                {skills.map((skill, index) => (
-                  <div
-                    key={skill.id}
-                    className={`p-3.5 sm:p-4 rounded-2xl bg-[#0e0e14] border border-[#20202c] flex items-center gap-3 group select-none slide-right-enter delay-${(index % 4) * 75 + 75} interactive-card`}
-                  >
-                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#161622] border border-[#262636] group-hover:border-blue-500/60 flex items-center justify-center shrink-0 transition-colors">
-                      {getSkillIcon(skill.iconType, 'w-5 h-5')}
-                    </div>
-                    <div className="overflow-hidden">
-                      <h3 className="font-bold text-xs sm:text-sm text-white truncate group-hover:text-blue-300 transition-colors">
-                        {skill.name}
-                      </h3>
-                      <p className="text-[10px] text-slate-400 truncate">{skill.category || 'Development'}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Services Guarantee Box */}
-              <div className="p-4 rounded-2xl bg-[#09090f] border border-[#1b1b26] space-y-2 slide-right-enter delay-225 interactive-card">
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span>Production Quality Guarantee</span>
-                </div>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Tested on physical Android devices, high performance web stacks, clean code architecture and responsive across all screens.
-                </p>
-              </div>
-            </div>
-
-            {/* ===================== HOW WE WORK SECTION ===================== */}
-            <section
-              id="how-we-work-section"
-              className="space-y-4"
-            >
-              <h2 className="text-2xl font-black tracking-tight slide-right-enter">How we work</h2>
-
-              <div className="space-y-3">
-                {steps.map((step, index) => (
-                  <div
-                    key={step.num}
-                    className={`rounded-2xl p-4.5 flex items-center gap-4 bg-[#0d0d12] border border-[#1f1f2c] slide-right-enter delay-${index * 75 + 75} interactive-card`}
-                  >
-                    <div className="w-9 h-9 rounded-full bg-[#2563eb] text-white font-extrabold text-sm flex items-center justify-center shrink-0 shadow-md shadow-blue-600/30">
-                      {step.num}
-                    </div>
-
-                    <div>
-                      <h3 className="text-base font-bold tracking-tight">{step.title}</h3>
-                      <p className="text-xs sm:text-sm text-slate-400 mt-0.5">{step.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* ===================== FAQ SECTION ===================== */}
-            <section
-              id="faq-section"
-              className="space-y-4"
-            >
-              <h2 className="text-2xl font-black tracking-tight slide-right-enter">FAQ</h2>
-
-              <div className="space-y-3">
-                {faqs.map((faq, index) => {
-                  const isOpen = openFaq === index;
-                  return (
-                    <div
-                      key={index}
-                      onClick={() => toggleFaq(index)}
-                      className={`rounded-2xl p-4 cursor-pointer bg-[#0d0d12] border border-[#1f1f2c] select-none slide-right-enter delay-${index * 75 + 75} interactive-card`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-blue-400 font-bold">{isOpen ? '▼' : '▶'}</span>
-                        <span className="text-sm sm:text-base font-semibold text-white">{faq.question}</span>
-                      </div>
-
-                      {isOpen && (
-                        <div className="mt-3 pt-3 border-t border-[#1f1f2b] text-xs sm:text-sm text-slate-300 leading-relaxed">
-                          {faq.answer}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
               </div>
             </section>
 
