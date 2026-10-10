@@ -593,7 +593,7 @@ export default function App() {
       
       {/* ===================== FIXED DISTINCT TOP BAR (NEVER SCROLLS AWAY) ===================== */}
       <header className="fixed top-0 left-0 right-0 z-40 bg-[#0c0c11]/95 border-b border-[#1f202b] px-4 sm:px-6 lg:px-8 py-3.5 backdrop-blur-md shadow-lg shadow-black/50">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+        <div className="max-w-[1200px] mx-auto flex items-center justify-between gap-4">
           
           {/* Brand Logo */}
           <div
@@ -730,8 +730,8 @@ export default function App() {
         </div>
       )}
 
-      {/* ===================== MAIN CONTENT CONTAINER (WINDOWS DESKTOP RESPONSIVE LAYOUT) ===================== */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 pt-20 sm:pt-24 pb-16">
+      {/* ===================== MAIN CONTENT CONTAINER (1200px MAX-WIDTH DESKTOP BOUNDARY) ===================== */}
+      <main className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 pb-16 site-container">
         <div className="md:grid md:grid-cols-12 md:gap-8 lg:gap-10 xl:gap-12 items-start">
           
           {/* ==================== LEFT COLUMN (STICKY ANCHOR ON LARGE SCREENS) ==================== */}
@@ -871,69 +871,30 @@ export default function App() {
                 />
               </div>
 
-              {/* Production Showcase App Cards */}
+              {/* Play Store Style App Grid: Only App Logo & Name on home page */}
               {filteredApps.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3.5 pt-1">
                   {filteredApps.map((app, index) => (
                     <div
                       key={app.id}
                       onClick={() => navigateToApp(app)}
-                      className={`p-5 rounded-2xl bg-[#0e0e15] border border-[#20202c] flex flex-col justify-between group select-none cursor-pointer slide-right-enter delay-${(index % 4) * 75 + 100} mouse-hover-card`}
+                      className={`group flex flex-col items-center text-center p-3 sm:p-3.5 rounded-2xl bg-[#0e0e15] hover:bg-[#141422] border border-[#20202c] hover:border-blue-500/40 select-none cursor-pointer slide-right-enter delay-${(index % 6) * 60 + 60} playstore-app-tile mouse-hover-card`}
+                      title={`Open ${app.title}`}
                     >
-                      <div className="flex items-start gap-3.5">
+                      {/* Squircle App Logo */}
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-[#13131c] border border-[#252535] group-hover:border-blue-400 group-hover:shadow-[0_6px_22px_rgba(59,130,246,0.35)] transition-all duration-300 flex items-center justify-center mb-2 shrink-0 playstore-icon-wrap shadow-md">
                         <img
                           src={app.logoUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150'}
                           alt={app.title}
-                          className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl object-cover border border-[#252535] group-hover:border-blue-400 group-hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all shrink-0"
+                          loading="lazy"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
-                        <div className="flex-1 overflow-hidden">
-                          <div className="flex items-center justify-between gap-1">
-                            <h3 className="font-bold text-base text-white truncate group-hover:text-blue-400 transition-colors">
-                              {app.title}
-                            </h3>
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-600/20 text-blue-400 border border-blue-500/30 font-semibold shrink-0">
-                              {app.version || 'v1.0.0'}
-                            </span>
-                          </div>
-                          <span className="text-xs text-slate-400 font-medium block mt-0.5">{app.category || 'Android App'}</span>
-                          <p className="text-xs text-slate-300 mt-2 line-clamp-2 leading-relaxed">
-                            {app.description}
-                          </p>
-                        </div>
                       </div>
 
-                      <div className="mt-4 pt-3.5 border-t border-[#1e1e28] flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5 overflow-hidden">
-                          <span className="text-[11px] text-slate-500 font-medium shrink-0">
-                            {app.apkSize || '15 MB'}
-                          </span>
-                          <span className="text-slate-700 text-[10px]">•</span>
-                          {/* Real platform logos */}
-                          <div className="flex items-center gap-1">
-                            {(app.platforms && app.platforms.length > 0 ? app.platforms : ['android']).map((plat) => (
-                              <span
-                                key={plat}
-                                title={plat === 'android' ? 'Android' : plat === 'windows' ? 'Windows' : 'Apple'}
-                                className="p-1 rounded-md bg-[#161622] border border-[#272738] inline-flex items-center justify-center shadow-sm"
-                              >
-                                {plat === 'android' && <AndroidLogo className="w-3 h-3" />}
-                                {plat === 'windows' && <WindowsLogo className="w-3 h-3" />}
-                                {plat === 'apple' && <AppleLogo className="w-3 h-3" />}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigateToApp(app);
-                          }}
-                          className="px-4 py-2 rounded-xl bg-blue-600/15 hover:bg-blue-600 border border-blue-500/30 hover:border-blue-500 text-xs font-bold text-blue-400 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 shrink-0 btn-interactive"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>View App</span>
-                        </button>
-                      </div>
+                      {/* App Name Only */}
+                      <h3 className="font-semibold text-xs sm:text-sm text-white group-hover:text-blue-400 line-clamp-2 leading-snug tracking-tight transition-colors w-full px-0.5">
+                        {app.title}
+                      </h3>
                     </div>
                   ))}
                 </div>
@@ -957,28 +918,28 @@ export default function App() {
               </div>
 
               {websites.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
                   {websites.map((web, index) => (
                     <div
                       key={web.id}
-                      className={`p-5 rounded-2xl bg-[#0e0e15] border border-[#20202c] flex flex-col justify-between slide-right-enter delay-${(index % 4) * 75 + 100} interactive-card`}
+                      className={`p-4 sm:p-4.5 rounded-xl sm:rounded-2xl bg-[#0e0e15] border border-[#20202c] hover:border-blue-500/30 flex flex-col justify-between slide-right-enter delay-${(index % 4) * 75 + 100} interactive-card`}
                     >
                       <div>
-                        <h3 className="font-bold text-base text-white">{web.title}</h3>
-                        <p className="text-xs text-slate-400 mt-2 line-clamp-2">{web.description}</p>
+                        <h3 className="font-bold text-sm sm:text-base text-white hover:text-blue-400 transition-colors">{web.title}</h3>
+                        <p className="text-xs text-slate-400 mt-1.5 line-clamp-2 leading-relaxed">{web.description}</p>
                       </div>
 
-                      <div className="mt-5 pt-3.5 border-t border-[#1e1e2a] flex items-center justify-between gap-3">
-                        <span className="text-xs text-blue-400 font-semibold px-2.5 py-1 rounded-lg bg-blue-600/10 border border-blue-500/20">{web.tags || 'Web App'}</span>
+                      <div className="mt-3.5 pt-3 border-t border-[#1e1e2a] flex items-center justify-between gap-2.5">
+                        <span className="text-[11px] text-blue-400 font-medium px-2 py-0.5 rounded-md bg-blue-600/10 border border-blue-500/20">{web.tags || 'Web App'}</span>
                         {web.liveUrl && (
                           <a
                             href={web.liveUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-blue-600/30 transition-all duration-300 active:scale-95 cursor-pointer shrink-0 btn-interactive"
+                            className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs flex items-center gap-1.5 shadow-md shadow-blue-600/20 transition-all duration-300 active:scale-95 cursor-pointer shrink-0 btn-interactive"
                           >
                             <span>Visit Website</span>
-                            <ExternalLink className="w-4 h-4" />
+                            <ExternalLink className="w-3.5 h-3.5" />
                           </a>
                         )}
                       </div>
