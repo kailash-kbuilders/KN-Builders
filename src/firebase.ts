@@ -84,6 +84,28 @@ export const APPS_COLLECTION = 'apps';
 export const WEBSITES_COLLECTION = 'websites';
 export const SKILLS_COLLECTION = 'skills';
 export const INQUIRIES_COLLECTION = 'inquiries';
+export const PLANNING_MESSAGES_COLLECTION = 'planning_messages';
+export const ADMIN_SETTINGS_COLLECTION = 'admin_settings';
+
+export interface PlanningMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  text: string;
+  imageUrl?: string;
+  linkUrl?: string;
+  timestamp: number;
+  isAi?: boolean;
+  aiModel?: string;
+  aiProvider?: 'openrouter' | 'nvidia';
+}
+
+export interface PlanningConfig {
+  provider: 'openrouter' | 'nvidia';
+  apiKey: string;
+  model: string;
+  systemPrompt?: string;
+}
 
 // Fallback initial seeds to ensure the website is NEVER completely blank
 export const DEFAULT_SKILLS: SkillItem[] = [

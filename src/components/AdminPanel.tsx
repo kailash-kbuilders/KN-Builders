@@ -43,9 +43,12 @@ import {
   Mail,
   X,
   Upload,
-  ArrowUp
+  ArrowUp,
+  MessageSquare,
+  Sparkles
 } from 'lucide-react';
 import { getSkillIcon, WhatsAppLogo, AndroidLogo, WindowsLogo, AppleLogo } from './Icons';
+import PlanChat from './PlanChat';
 
 interface AdminPanelProps {
   apps: AppItem[];
@@ -130,7 +133,7 @@ export default function AdminPanel({
   const [passwordInput, setPasswordInput] = useState<string>('');
   const [authError, setAuthError] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'apps' | 'websites' | 'skills' | 'inquiries'>('apps');
+  const [activeTab, setActiveTab] = useState<'apps' | 'websites' | 'skills' | 'inquiries' | 'plan'>('apps');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -627,6 +630,21 @@ export default function AdminPanel({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Plan Room Direct Button next to Lock and Live Website */}
+          <button
+            onClick={() => setActiveTab('plan')}
+            title="Open WhatsApp-style Planning Room"
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm active:scale-95 ${
+              activeTab === 'plan'
+                ? 'bg-emerald-600 text-white border border-emerald-500 shadow-emerald-900/40'
+                : 'bg-[#13231c] hover:bg-[#1a3328] border border-emerald-600/40 text-emerald-400 hover:text-emerald-300'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Plan</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
+          </button>
+
           <button
             onClick={handleLogout}
             title="Lock Admin Session"
@@ -693,6 +711,21 @@ export default function AdminPanel({
         >
           <Inbox className="w-4 h-4" />
           <span>Inquiries ({localInquiries.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('plan')}
+          className={`px-5 py-3 rounded-2xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+            activeTab === 'plan'
+              ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 font-bold'
+              : 'bg-[#121218] text-slate-400 hover:text-emerald-400 border border-[#20202a]'
+          }`}
+        >
+          <MessageSquare className="w-4 h-4 text-emerald-400" />
+          <span>Plan Room</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
+            WhatsApp & AI
+          </span>
         </button>
       </div>
 
@@ -1394,6 +1427,9 @@ export default function AdminPanel({
             )}
           </div>
         )}
+
+        {/* ===================== PLAN CHAT TAB (WhatsApp style + AI) ===================== */}
+        {activeTab === 'plan' && <PlanChat />}
 
       </div>
     </div>
