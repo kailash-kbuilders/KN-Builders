@@ -1,0 +1,6 @@
+# Robots.txt for KN Builders
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: /sitemap.xml
