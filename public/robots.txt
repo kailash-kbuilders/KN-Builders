@@ -3,4 +3,4 @@ User-agent: *
 Allow: /
 
 # Sitemap location
-Sitemap: /sitemap.xml
+Sitemap: https://kn-builders.vercel.app/sitemap.xml
