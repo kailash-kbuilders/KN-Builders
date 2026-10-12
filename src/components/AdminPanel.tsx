@@ -43,7 +43,9 @@ import {
   Mail,
   X,
   Upload,
-  ArrowUp
+  ArrowUp,
+  Bell,
+  ChevronRight
 } from 'lucide-react';
 import { getSkillIcon, WhatsAppLogo, AndroidLogo, WindowsLogo, AppleLogo } from './Icons';
 
@@ -52,6 +54,7 @@ interface AdminPanelProps {
   websites: WebsiteItem[];
   skills: SkillItem[];
   inquiries: InquiryItem[];
+  initialTab?: 'apps' | 'websites' | 'skills' | 'inquiries';
   onBack: () => void;
   onRefresh: () => void;
 }
@@ -120,6 +123,7 @@ export default function AdminPanel({
   websites,
   skills,
   inquiries,
+  initialTab,
   onBack,
   onRefresh
 }: AdminPanelProps) {
@@ -130,7 +134,16 @@ export default function AdminPanel({
   const [passwordInput, setPasswordInput] = useState<string>('');
   const [authError, setAuthError] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'apps' | 'websites' | 'skills' | 'inquiries'>('apps');
+  const [activeTab, setActiveTab] = useState<'apps' | 'websites' | 'skills' | 'inquiries'>(() => {
+    if (initialTab) return initialTab;
+    if (typeof window !== 'undefined') {
+      const h = window.location.hash.toLowerCase();
+      if (h.includes('inquir')) return 'inquiries';
+    }
+    // Automatically focus on inquiries if any client inquiries exist
+    if (inquiries && inquiries.length > 0) return 'inquiries';
+    return 'apps';
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -645,54 +658,93 @@ export default function AdminPanel({
         </div>
       </div>
 
-      {/* Nav Tabs */}
-      <div className="max-w-6xl mx-auto mt-6 flex gap-2 overflow-x-auto pb-2">
+      {/* ===================== INQUIRY REMINDER BANNER ===================== */}
+      {localInquiries.length > 0 && (
+        <div
+          onClick={() => setActiveTab('inquiries')}
+          className="max-w-6xl mx-auto mt-4 p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-blue-950/70 via-indigo-950/60 to-[#0e0e16] border border-blue-500/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer hover:border-blue-400 transition-all shadow-lg shadow-blue-950/40"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-600/30 border border-blue-400/40 flex items-center justify-center shrink-0 text-blue-400">
+              <Bell className="w-5 h-5 animate-pulse text-blue-300" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-600 text-white animate-pulse">
+                  🔔 {localInquiries.length} New Inquiry
+                </span>
+                <span className="text-xs text-slate-200 font-semibold">
+                  Client project inquiry waiting!
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Client: <span className="text-white font-bold">{localInquiries[0]?.name}</span> • Need: <span className="text-blue-300">{localInquiries[0]?.needs || 'Project'}</span> — Tap here to reply
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shrink-0 shadow-md shadow-blue-600/30 cursor-pointer"
+          >
+            <span>Open Inquiries</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* Nav Tabs (2x2 grid on mobile so every tab is instantly visible without horizontal scrolling) */}
+      <div className="max-w-6xl mx-auto mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <button
+          onClick={() => setActiveTab('inquiries')}
+          className={`px-3 py-3 rounded-2xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer relative ${
+            activeTab === 'inquiries'
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+              : 'bg-[#121218] text-slate-300 hover:text-white border border-[#20202a]'
+          }`}
+        >
+          <Inbox className="w-4 h-4 text-blue-400 shrink-0" />
+          <span className="truncate">Inquiries</span>
+          {localInquiries.length > 0 && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-red-500 text-white animate-pulse">
+              {localInquiries.length}
+            </span>
+          )}
+        </button>
+
         <button
           onClick={() => setActiveTab('apps')}
-          className={`px-5 py-3 rounded-2xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+          className={`px-3 py-3 rounded-2xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
             activeTab === 'apps'
               ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
               : 'bg-[#121218] text-slate-400 hover:text-white border border-[#20202a]'
           }`}
         >
-          <Smartphone className="w-4 h-4" />
-          <span>Apps ({localApps.length})</span>
+          <Smartphone className="w-4 h-4 shrink-0" />
+          <span className="truncate">Apps ({localApps.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('websites')}
-          className={`px-5 py-3 rounded-2xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+          className={`px-3 py-3 rounded-2xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
             activeTab === 'websites'
               ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
               : 'bg-[#121218] text-slate-400 hover:text-white border border-[#20202a]'
           }`}
         >
-          <Globe className="w-4 h-4" />
-          <span>Websites ({localWebsites.length})</span>
+          <Globe className="w-4 h-4 shrink-0" />
+          <span className="truncate">Websites ({localWebsites.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('skills')}
-          className={`px-5 py-3 rounded-2xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+          className={`px-3 py-3 rounded-2xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
             activeTab === 'skills'
               ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
               : 'bg-[#121218] text-slate-400 hover:text-white border border-[#20202a]'
           }`}
         >
-          <Award className="w-4 h-4" />
-          <span>Skills ({localSkills.length})</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('inquiries')}
-          className={`px-5 py-3 rounded-2xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer ${
-            activeTab === 'inquiries'
-              ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-              : 'bg-[#121218] text-slate-400 hover:text-white border border-[#20202a]'
-          }`}
-        >
-          <Inbox className="w-4 h-4" />
-          <span>Inquiries ({localInquiries.length})</span>
+          <Award className="w-4 h-4 shrink-0" />
+          <span className="truncate">Skills ({localSkills.length})</span>
         </button>
       </div>
 
@@ -1310,10 +1362,18 @@ export default function AdminPanel({
               <div className="space-y-3">
                 {localInquiries.map((inq) => {
                   const rawPhone = inq.phone ? inq.phone.replace(/[^0-9]/g, '') : '';
-                  const clientWhatsAppNumber = rawPhone.length === 10 ? `91${rawPhone}` : rawPhone;
-                  const waChatUrl = rawPhone
+                  let clientWhatsAppNumber = '';
+                  if (rawPhone.length === 10) {
+                    clientWhatsAppNumber = `91${rawPhone}`;
+                  } else if (rawPhone.length === 11 && rawPhone.startsWith('0')) {
+                    clientWhatsAppNumber = `91${rawPhone.slice(1)}`;
+                  } else if (rawPhone.length >= 10) {
+                    clientWhatsAppNumber = rawPhone;
+                  }
+
+                  const clientWhatsAppUrl = clientWhatsAppNumber
                     ? `https://wa.me/${clientWhatsAppNumber}?text=Hi%20${encodeURIComponent(inq.name)}%2C%20thank%20you%20for%20contacting%20KN%20Builders!%20Regarding%20your%20inquiry%20for%20${encodeURIComponent(inq.needs || 'Project')}...`
-                    : `https://wa.me/916377938441?text=Hi%20${encodeURIComponent(inq.name)}%2C%20regarding%20your%20inquiry...`;
+                    : null;
 
                   return (
                     <div
@@ -1335,11 +1395,11 @@ export default function AdminPanel({
                             {inq.phone ? (
                               <span className="text-emerald-400 font-semibold flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20">
                                 <Phone className="w-3.5 h-3.5" />
-                                <span>WhatsApp: {inq.phone}</span>
+                                <span>Client Phone: {inq.phone}</span>
                               </span>
                             ) : (
-                              <span className="text-slate-500 text-[11px] italic">
-                                No phone provided
+                              <span className="text-slate-500 text-[11px] italic bg-[#15151e] px-2 py-0.5 rounded-md">
+                                No phone number provided
                               </span>
                             )}
                           </div>
@@ -1358,23 +1418,38 @@ export default function AdminPanel({
                       </p>
 
                       <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                        <div className="flex items-center gap-2">
-                          <a
-                            href={waChatUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="px-3.5 py-2 rounded-xl bg-[#25D366] hover:bg-[#1fb355] text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-md shadow-green-600/20 transition-all active:scale-95"
-                          >
-                            <WhatsAppLogo className="w-4 h-4" />
-                            <span>{inq.phone ? 'Reply on Client WhatsApp' : 'WhatsApp'}</span>
-                          </a>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {/* CLIENT WHATSAPP: ONLY if client provided a phone number */}
+                          {clientWhatsAppUrl && (
+                            <a
+                              href={clientWhatsAppUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="px-3.5 py-2 rounded-xl bg-[#25D366] hover:bg-[#1fb355] text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-md shadow-green-600/20 transition-all active:scale-95"
+                            >
+                              <WhatsAppLogo className="w-4 h-4" />
+                              <span>Reply on WhatsApp ({inq.phone})</span>
+                            </a>
+                          )}
 
+                          {/* DIRECT CALL: ONLY if client provided a phone number */}
+                          {clientWhatsAppNumber && (
+                            <a
+                              href={`tel:+${clientWhatsAppNumber}`}
+                              className="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold text-xs inline-flex items-center gap-1.5 transition-all active:scale-95"
+                            >
+                              <Phone className="w-3.5 h-3.5" />
+                              <span>Call</span>
+                            </a>
+                          )}
+
+                          {/* EMAIL REPLY: ALWAYS Available */}
                           <a
                             href={`mailto:${inq.email}?subject=Regarding%20Your%20Project%20Inquiry%20-%20KN%20Builders&body=Hi%20${encodeURIComponent(inq.name)}%2C%0A%0AThank%20you%20for%20contacting%20KN%20Builders.`}
                             className="px-3.5 py-2 rounded-xl bg-[#1e1e28] hover:bg-[#282838] text-slate-200 border border-[#303040] font-semibold text-xs inline-flex items-center gap-1.5 transition-all"
                           >
                             <Mail className="w-3.5 h-3.5 text-blue-400" />
-                            <span>Send Email</span>
+                            <span>Reply via Email</span>
                           </a>
                         </div>
 

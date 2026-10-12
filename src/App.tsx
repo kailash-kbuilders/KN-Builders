@@ -559,12 +559,14 @@ export default function App() {
 
   // ROUTE 1: ADMIN PANEL (Only when explicitly opened via URL /admin or /#admin)
   if (isAdminView) {
+    const isOpeningInquiriesDirectly = typeof window !== 'undefined' && window.location.hash.toLowerCase().includes('inquir');
     return (
       <AdminPanel
         apps={apps}
         websites={websites}
         skills={skills}
         inquiries={inquiries}
+        initialTab={isOpeningInquiriesDirectly || inquiries.length > 0 ? 'inquiries' : 'apps'}
         onBack={navigateToHome}
         onRefresh={() => {}}
       />
@@ -592,8 +594,8 @@ export default function App() {
       <CustomCursor />
       
       {/* ===================== FIXED DISTINCT TOP BAR (NEVER SCROLLS AWAY) ===================== */}
-      <header className="fixed top-0 left-0 right-0 z-40 bg-[#0c0c11]/95 border-b border-[#1f202b] px-4 sm:px-6 lg:px-8 py-3.5 backdrop-blur-md shadow-lg shadow-black/50">
-        <div className="max-w-[1200px] mx-auto flex items-center justify-between gap-4">
+      <header className="fixed top-0 left-0 right-0 z-40 bg-[#0c0c11]/95 border-b border-[#1f202b] px-4 sm:px-6 py-3.5 backdrop-blur-md shadow-lg shadow-black/50">
+        <div className="max-w-2xl sm:max-w-3xl lg:max-w-[780px] mx-auto flex items-center justify-between gap-4">
           
           {/* Brand Logo */}
           <div
@@ -707,8 +709,27 @@ export default function App() {
               </nav>
             </div>
 
-            {/* Bottom: Chat on WhatsApp */}
-            <div className="pt-4 border-t border-[#1f1f2a]">
+            {/* Bottom Actions: Admin shortcut + Chat on WhatsApp */}
+            <div className="pt-4 border-t border-[#1f1f2a] space-y-3">
+              <button
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  window.location.hash = '#inquiries';
+                  setIsAdminView(true);
+                }}
+                className="w-full py-2.5 px-3 rounded-xl bg-[#14141c] hover:bg-[#1c1c28] border border-[#242432] text-xs font-semibold text-slate-300 hover:text-white flex items-center justify-between cursor-pointer transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Lock className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Admin Panel & Inquiries</span>
+                </div>
+                {inquiries.length > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-600 text-white animate-pulse">
+                    {inquiries.length} New
+                  </span>
+                )}
+              </button>
+
               <button
                 onClick={() => {
                   setIsMenuOpen(false);
@@ -722,7 +743,7 @@ export default function App() {
                 </div>
                 <span className="text-[11px] text-emerald-100 font-medium">⚡ Fastest reply</span>
               </button>
-              <p className="text-[11px] text-center text-slate-500 mt-2">
+              <p className="text-[11px] text-center text-slate-500">
                 Direct: +91 {WHATSAPP_NUMBER}
               </p>
             </div>
@@ -730,12 +751,12 @@ export default function App() {
         </div>
       )}
 
-      {/* ===================== MAIN CONTENT CONTAINER (1200px MAX-WIDTH DESKTOP BOUNDARY) ===================== */}
-      <main className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 pb-16 site-container">
-        <div className="md:grid md:grid-cols-12 md:gap-8 lg:gap-10 xl:gap-12 items-start">
+      {/* ===================== MAIN CONTENT CONTAINER (CENTERED FOCUSED SINGLE COLUMN) ===================== */}
+      <main className="max-w-2xl sm:max-w-3xl lg:max-w-[780px] mx-auto px-4 sm:px-6 pt-20 sm:pt-24 pb-16 site-container">
+        <div className="space-y-12 sm:space-y-14">
           
-          {/* ==================== LEFT COLUMN (STICKY ANCHOR ON LARGE SCREENS) ==================== */}
-          <div id="home" className="md:col-span-5 lg:col-span-5 space-y-6 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto no-scrollbar pr-1">
+          {/* ==================== HERO & INTRO ==================== */}
+          <div id="home" className="space-y-6">
             
             {/* Status Badge */}
             <div className="slide-right-enter">
@@ -843,14 +864,11 @@ export default function App() {
 
           </div>
 
-          {/* ==================== RIGHT COLUMN ==================== */}
-          <div className="md:col-span-7 lg:col-span-7 space-y-12 lg:space-y-14 mt-12 md:mt-0">
-
-            {/* ===================== APPS SECTION (Step 3 in sequence) ===================== */}
-            <section
-              id="apps-section"
-              className="space-y-4"
-            >
+          {/* ===================== APPS SECTION (Step 3 in sequence) ===================== */}
+          <section
+            id="apps-section"
+            className="space-y-4"
+          >
               <div className="flex items-center justify-between slide-right-enter">
                 <div>
                   <h2 className="text-2xl font-black tracking-tight">Apps</h2>
@@ -1178,15 +1196,30 @@ export default function App() {
                 )}
               </div>
             </section>
-
-          </div>
         </div>
 
         {/* ===================== FOOTER ===================== */}
-        <footer className="text-center pt-16 pb-8 border-t border-[#181822] mt-16 flex flex-col items-center justify-center">
+        <footer className="text-center pt-16 pb-8 border-t border-[#181822] mt-16 flex flex-col items-center justify-center gap-3">
           <p className="text-xs sm:text-sm text-slate-500 font-medium">
             © 2026 KN Builders
           </p>
+          <div className="flex items-center gap-4 text-xs text-slate-600">
+            <button
+              onClick={() => {
+                window.location.hash = '#inquiries';
+                setIsAdminView(true);
+              }}
+              className="hover:text-slate-400 transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <Lock className="w-3 h-3 text-slate-500" />
+              <span>Admin & Client Inquiries</span>
+              {inquiries.length > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-blue-600 text-white animate-pulse">
+                  {inquiries.length} New
+                </span>
+              )}
+            </button>
+          </div>
         </footer>
       </main>
 
