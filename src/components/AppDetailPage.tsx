@@ -95,12 +95,12 @@ export default function AppDetailPage({ app, onBack, whatsappUrl }: AppDetailPag
       {/* ===================== FULLSCREEN SCREENSHOT LIGHTBOX ===================== */}
       {activeScreenshotIndex !== null && screenshotList[activeScreenshotIndex] && (
         <div
-          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-between p-4 sm:p-6 animate-in fade-in duration-200 select-none"
+          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex flex-col items-center justify-between p-4 sm:p-6 animate-in fade-in duration-200 select-none"
           onClick={() => setActiveScreenshotIndex(null)}
         >
           {/* Top Bar */}
           <div
-            className="w-full max-w-4xl flex items-center justify-between z-10"
+            className="w-full max-w-md flex items-center justify-between z-10"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-2">
@@ -114,16 +114,16 @@ export default function AppDetailPage({ app, onBack, whatsappUrl }: AppDetailPag
 
             <button
               onClick={() => setActiveScreenshotIndex(null)}
-              className="w-10 h-10 rounded-full bg-[#1b1c28] hover:bg-[#252636] border border-[#2e2f42] flex items-center justify-center text-slate-300 hover:text-white transition-all cursor-pointer shadow-lg active:scale-95"
+              className="w-9 h-9 rounded-full bg-[#1b1c28] hover:bg-[#252636] border border-[#2e2f42] flex items-center justify-center text-slate-300 hover:text-white transition-all cursor-pointer shadow-lg active:scale-95"
               title="Close (Esc)"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
 
           {/* Center Image with Previous / Next Controls */}
           <div
-            className="relative flex items-center justify-center max-w-full max-h-[82vh] my-auto"
+            className="relative flex items-center justify-center max-w-full my-auto px-4"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Previous Button */}
@@ -133,19 +133,23 @@ export default function AppDetailPage({ app, onBack, whatsappUrl }: AppDetailPag
                   e.stopPropagation();
                   setActiveScreenshotIndex((prev) => (prev !== null ? (prev - 1 + screenshotList.length) % screenshotList.length : 0));
                 }}
-                className="absolute left-2 sm:-left-16 z-20 w-11 h-11 rounded-full bg-[#111118]/90 hover:bg-[#222232] border border-[#2b2b3e] text-white flex items-center justify-center cursor-pointer shadow-2xl transition-all active:scale-90"
+                className="absolute -left-3 sm:-left-12 z-20 w-10 h-10 rounded-full bg-[#111118]/90 hover:bg-[#222232] border border-[#2b2b3e] text-white flex items-center justify-center cursor-pointer shadow-2xl transition-all active:scale-90"
                 title="Previous Screenshot"
               >
-                <ChevronLeft className="w-6 h-6" />
+                <ChevronLeft className="w-5 h-5" />
               </button>
             )}
 
-            {/* Expanded Screenshot Image (Phone Proportioned Mockup) */}
-            <img
-              src={screenshotList[activeScreenshotIndex]}
-              alt={`${app.title} screenshot ${activeScreenshotIndex + 1}`}
-              className="max-h-[72vh] w-auto max-w-[300px] sm:max-w-[340px] aspect-[9/19] sm:aspect-[9/16] object-contain rounded-2xl sm:rounded-3xl border-2 border-[#2e2e42] shadow-[0_10px_50px_rgba(0,0,0,0.9)] bg-black animate-in zoom-in-95 duration-200"
-            />
+            {/* Expanded Screenshot Mockup: Balanced, Realistic Smartphone Proportions */}
+            <div className="relative rounded-[26px] sm:rounded-[30px] p-2 bg-[#12121c] border-2 border-[#2f3045] shadow-[0_12px_45px_rgba(0,0,0,0.95)] flex items-center justify-center animate-in zoom-in-95 duration-200">
+              <div className="rounded-[20px] sm:rounded-[24px] overflow-hidden bg-black flex items-center justify-center">
+                <img
+                  src={screenshotList[activeScreenshotIndex]}
+                  alt={`${app.title} screenshot ${activeScreenshotIndex + 1}`}
+                  className="max-h-[54vh] sm:max-h-[60vh] w-auto max-w-[220px] sm:max-w-[260px] object-contain select-none"
+                />
+              </div>
+            </div>
 
             {/* Next Button */}
             {screenshotList.length > 1 && (
@@ -154,17 +158,17 @@ export default function AppDetailPage({ app, onBack, whatsappUrl }: AppDetailPag
                   e.stopPropagation();
                   setActiveScreenshotIndex((prev) => (prev !== null ? (prev + 1) % screenshotList.length : 0));
                 }}
-                className="absolute right-2 sm:-right-16 z-20 w-11 h-11 rounded-full bg-[#111118]/90 hover:bg-[#222232] border border-[#2b2b3e] text-white flex items-center justify-center cursor-pointer shadow-2xl transition-all active:scale-90"
+                className="absolute -right-3 sm:-right-12 z-20 w-10 h-10 rounded-full bg-[#111118]/90 hover:bg-[#222232] border border-[#2b2b3e] text-white flex items-center justify-center cursor-pointer shadow-2xl transition-all active:scale-90"
                 title="Next Screenshot"
               >
-                <ChevronRight className="w-6 h-6" />
+                <ChevronRight className="w-5 h-5" />
               </button>
             )}
           </div>
 
           {/* Bottom Hint */}
-          <div className="text-center text-xs text-slate-400 z-10 hidden sm:block">
-            Use Arrow keys or tap anywhere to close
+          <div className="text-center text-xs text-slate-400 z-10">
+            Swipe or use arrow keys &bull; Tap outside to close
           </div>
         </div>
       )}
@@ -178,8 +182,8 @@ export default function AppDetailPage({ app, onBack, whatsappUrl }: AppDetailPag
       )}
 
       {/* Top Header Bar */}
-      <header className="sticky top-0 z-30 bg-[#121217] border-b border-[#20212b] px-4 sm:px-8 py-3.5 backdrop-blur-md">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
+      <header className="sticky top-0 z-30 bg-[#121217] border-b border-[#20212b] px-4 sm:px-6 py-3.5 backdrop-blur-md">
+        <div className="max-w-2xl sm:max-w-3xl lg:max-w-[780px] mx-auto flex items-center justify-between">
           <button
             onClick={onBack}
             className="flex items-center gap-2 text-sm font-semibold text-slate-300 hover:text-white cursor-pointer active:scale-95 transition-all"
@@ -198,8 +202,8 @@ export default function AppDetailPage({ app, onBack, whatsappUrl }: AppDetailPag
         </div>
       </header>
 
-      {/* Main Container */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-6 sm:pt-10 space-y-8">
+      {/* Main Container: Centered, balanced, looks identical to high-end mobile app preview on both desktop and mobile */}
+      <main className="max-w-2xl sm:max-w-3xl lg:max-w-[780px] mx-auto px-4 sm:px-6 pt-5 sm:pt-8 space-y-6">
         {/* App Hero Section */}
         <div className="p-6 sm:p-8 rounded-3xl bg-[#0d0d14] border border-[#1f1f2c] shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-72 h-72 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
@@ -296,50 +300,50 @@ export default function AppDetailPage({ app, onBack, whatsappUrl }: AppDetailPag
           </div>
         </div>
 
-        {/* Screenshots Showcase (Click to View Full Size) */}
+        {/* Screenshots Showcase (Balanced Google Play Store Phone Mockup Size) */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
               <span>Screenshots ({screenshotList.length > 0 ? screenshotList.length : 'Preview'})</span>
             </h2>
             {screenshotList.length > 0 && (
               <span className="text-xs text-blue-400 font-semibold flex items-center gap-1">
                 <ZoomIn className="w-3.5 h-3.5" />
-                <span>Tap any image to expand</span>
+                <span>Tap to expand</span>
               </span>
             )}
           </div>
 
           {screenshotList.length > 0 ? (
-            <div className="flex gap-2.5 sm:gap-3.5 overflow-x-auto pb-3 pt-1 scrollbar-none snap-x no-scrollbar">
+            <div className="flex gap-2.5 sm:gap-3 overflow-x-auto pb-2 pt-1 scrollbar-none snap-x no-scrollbar">
               {screenshotList.map((imgUrl, idx) => (
                 <div
                   key={idx}
                   onClick={() => setActiveScreenshotIndex(idx)}
-                  className="relative group rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer snap-start shrink-0 border border-[#262638] bg-[#09090f] shadow-lg hover:border-blue-500/80 transition-all duration-200 hover:scale-[1.02]"
+                  className="relative group w-[96px] sm:w-[110px] h-[170px] sm:h-[195px] rounded-2xl overflow-hidden cursor-pointer snap-start shrink-0 border border-[#262638] bg-[#09090f] shadow-md hover:border-blue-500/80 transition-all duration-200 hover:scale-[1.02]"
                 >
                   <img
                     src={imgUrl}
                     alt={`${app.title} screenshot ${idx + 1}`}
-                    className="h-44 sm:h-52 w-auto max-w-[115px] sm:max-w-[135px] aspect-[9/16] object-cover rounded-xl sm:rounded-2xl select-none"
+                    className="w-full h-full object-cover select-none"
                     loading="lazy"
                   />
                   {/* Subtle hover overlay indicating click to enlarge */}
-                  <div className="absolute inset-0 bg-blue-600/15 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div className="px-2.5 py-1 rounded-full bg-black/80 backdrop-blur-sm text-white text-[10px] font-bold flex items-center gap-1 shadow-lg">
+                  <div className="absolute inset-0 bg-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <div className="px-2 py-0.5 rounded-full bg-black/80 backdrop-blur-sm text-white text-[10px] font-bold flex items-center gap-1 shadow-lg">
                       <ZoomIn className="w-3 h-3 text-blue-400" />
-                      <span>Expand</span>
+                      <span>Preview</span>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="flex gap-2.5 sm:gap-3 overflow-x-auto pb-3 pt-1 scrollbar-none snap-x no-scrollbar">
+            <div className="flex gap-2.5 sm:gap-3 overflow-x-auto pb-2 pt-1 scrollbar-none snap-x no-scrollbar">
               {[1, 2, 3].map((num) => (
                 <div
                   key={num}
-                  className="h-44 sm:h-52 w-28 sm:w-32 rounded-xl sm:rounded-2xl bg-[#12121a] border border-[#252536] p-3 flex flex-col justify-between shrink-0 snap-start shadow-md"
+                  className="w-[96px] sm:w-[110px] h-[170px] sm:h-[195px] rounded-2xl bg-[#12121a] border border-[#252536] p-3 flex flex-col justify-between shrink-0 snap-start shadow-md"
                 >
                   <div className="w-7 h-7 rounded-xl bg-blue-600/20 flex items-center justify-center">
                     <Smartphone className="w-3.5 h-3.5 text-blue-400" />
