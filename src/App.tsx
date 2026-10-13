@@ -83,9 +83,6 @@ function sortAppsNewestFirst(items: AppItem[]): AppItem[] {
       return dateB - dateA;
     }
 
-    if (a.id === 'pulse-fitness-app') return 1;
-    if (b.id === 'pulse-fitness-app') return -1;
-
     return 0;
   });
 }

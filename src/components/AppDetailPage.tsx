@@ -140,11 +140,11 @@ export default function AppDetailPage({ app, onBack, whatsappUrl }: AppDetailPag
               </button>
             )}
 
-            {/* Expanded Screenshot Image */}
+            {/* Expanded Screenshot Image (Phone Proportioned Mockup) */}
             <img
               src={screenshotList[activeScreenshotIndex]}
               alt={`${app.title} screenshot ${activeScreenshotIndex + 1}`}
-              className="max-h-[80vh] max-w-[90vw] sm:max-w-[70vw] object-contain rounded-2xl sm:rounded-3xl border border-[#2e2e42] shadow-[0_10px_50px_rgba(0,0,0,0.9)] animate-in zoom-in-95 duration-200"
+              className="max-h-[72vh] w-auto max-w-[300px] sm:max-w-[340px] aspect-[9/19] sm:aspect-[9/16] object-contain rounded-2xl sm:rounded-3xl border-2 border-[#2e2e42] shadow-[0_10px_50px_rgba(0,0,0,0.9)] bg-black animate-in zoom-in-95 duration-200"
             />
 
             {/* Next Button */}
@@ -311,44 +311,45 @@ export default function AppDetailPage({ app, onBack, whatsappUrl }: AppDetailPag
           </div>
 
           {screenshotList.length > 0 ? (
-            <div className="flex gap-4 overflow-x-auto pb-4 pt-1 scrollbar-thin snap-x">
+            <div className="flex gap-2.5 sm:gap-3.5 overflow-x-auto pb-3 pt-1 scrollbar-none snap-x no-scrollbar">
               {screenshotList.map((imgUrl, idx) => (
                 <div
                   key={idx}
                   onClick={() => setActiveScreenshotIndex(idx)}
-                  className="relative group rounded-2xl overflow-hidden cursor-pointer snap-start shrink-0 border border-[#2a2a3c] shadow-xl hover:border-blue-500/80 transition-all duration-300 hover:scale-[1.03]"
+                  className="relative group rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer snap-start shrink-0 border border-[#262638] bg-[#09090f] shadow-lg hover:border-blue-500/80 transition-all duration-200 hover:scale-[1.02]"
                 >
                   <img
                     src={imgUrl}
                     alt={`${app.title} screenshot ${idx + 1}`}
-                    className="h-72 sm:h-80 w-auto max-w-[240px] object-cover"
+                    className="h-44 sm:h-52 w-auto max-w-[115px] sm:max-w-[135px] aspect-[9/16] object-cover rounded-xl sm:rounded-2xl select-none"
+                    loading="lazy"
                   />
                   {/* Subtle hover overlay indicating click to enlarge */}
                   <div className="absolute inset-0 bg-blue-600/15 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div className="px-3 py-1.5 rounded-full bg-black/80 backdrop-blur-sm text-white text-xs font-bold flex items-center gap-1 shadow-lg">
-                      <ZoomIn className="w-3.5 h-3.5 text-blue-400" />
-                      <span>View</span>
+                    <div className="px-2.5 py-1 rounded-full bg-black/80 backdrop-blur-sm text-white text-[10px] font-bold flex items-center gap-1 shadow-lg">
+                      <ZoomIn className="w-3 h-3 text-blue-400" />
+                      <span>Expand</span>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="flex gap-3 overflow-x-auto pb-3 pt-1 scrollbar-none snap-x">
+            <div className="flex gap-2.5 sm:gap-3 overflow-x-auto pb-3 pt-1 scrollbar-none snap-x no-scrollbar">
               {[1, 2, 3].map((num) => (
                 <div
                   key={num}
-                  className="h-60 sm:h-64 w-36 sm:w-40 rounded-2xl bg-[#12121a] border border-[#252536] p-3 flex flex-col justify-between shrink-0 snap-start shadow-md"
+                  className="h-44 sm:h-52 w-28 sm:w-32 rounded-xl sm:rounded-2xl bg-[#12121a] border border-[#252536] p-3 flex flex-col justify-between shrink-0 snap-start shadow-md"
                 >
-                  <div className="w-8 h-8 rounded-xl bg-blue-600/20 flex items-center justify-center">
-                    <Smartphone className="w-4 h-4 text-blue-400" />
+                  <div className="w-7 h-7 rounded-xl bg-blue-600/20 flex items-center justify-center">
+                    <Smartphone className="w-3.5 h-3.5 text-blue-400" />
                   </div>
                   <div className="space-y-1.5">
-                    <div className="h-2 w-3/4 bg-slate-800 rounded-full" />
-                    <div className="h-2 w-1/2 bg-slate-800 rounded-full" />
-                    <div className="h-2 w-full bg-slate-800 rounded-full" />
+                    <div className="h-1.5 w-3/4 bg-slate-800 rounded-full" />
+                    <div className="h-1.5 w-1/2 bg-slate-800 rounded-full" />
+                    <div className="h-1.5 w-full bg-slate-800 rounded-full" />
                   </div>
-                  <span className="text-[10px] text-slate-500 text-center font-mono">App Preview {num}</span>
+                  <span className="text-[9px] text-slate-500 text-center font-mono">App Preview {num}</span>
                 </div>
               ))}
             </div>
