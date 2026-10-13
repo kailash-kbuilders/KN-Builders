@@ -17,7 +17,6 @@ import {
   Phone,
   Mail,
   CheckCircle2,
-  Lock,
   Eye
 } from 'lucide-react';
 import {
@@ -709,27 +708,8 @@ export default function App() {
               </nav>
             </div>
 
-            {/* Bottom Actions: Admin shortcut + Chat on WhatsApp */}
-            <div className="pt-4 border-t border-[#1f1f2a] space-y-3">
-              <button
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  window.location.hash = '#inquiries';
-                  setIsAdminView(true);
-                }}
-                className="w-full py-2.5 px-3 rounded-xl bg-[#14141c] hover:bg-[#1c1c28] border border-[#242432] text-xs font-semibold text-slate-300 hover:text-white flex items-center justify-between cursor-pointer transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <Lock className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Admin Panel & Inquiries</span>
-                </div>
-                {inquiries.length > 0 && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-600 text-white animate-pulse">
-                    {inquiries.length} New
-                  </span>
-                )}
-              </button>
-
+            {/* Bottom: Chat on WhatsApp */}
+            <div className="pt-4 border-t border-[#1f1f2a]">
               <button
                 onClick={() => {
                   setIsMenuOpen(false);
@@ -743,7 +723,7 @@ export default function App() {
                 </div>
                 <span className="text-[11px] text-emerald-100 font-medium">⚡ Fastest reply</span>
               </button>
-              <p className="text-[11px] text-center text-slate-500">
+              <p className="text-[11px] text-center text-slate-500 mt-2">
                 Direct: +91 {WHATSAPP_NUMBER}
               </p>
             </div>
@@ -1199,27 +1179,10 @@ export default function App() {
         </div>
 
         {/* ===================== FOOTER ===================== */}
-        <footer className="text-center pt-16 pb-8 border-t border-[#181822] mt-16 flex flex-col items-center justify-center gap-3">
+        <footer className="text-center pt-16 pb-8 border-t border-[#181822] mt-16 flex flex-col items-center justify-center">
           <p className="text-xs sm:text-sm text-slate-500 font-medium">
             © 2026 KN Builders
           </p>
-          <div className="flex items-center gap-4 text-xs text-slate-600">
-            <button
-              onClick={() => {
-                window.location.hash = '#inquiries';
-                setIsAdminView(true);
-              }}
-              className="hover:text-slate-400 transition-colors flex items-center gap-1.5 cursor-pointer"
-            >
-              <Lock className="w-3 h-3 text-slate-500" />
-              <span>Admin & Client Inquiries</span>
-              {inquiries.length > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-blue-600 text-white animate-pulse">
-                  {inquiries.length} New
-                </span>
-              )}
-            </button>
-          </div>
         </footer>
       </main>
 
