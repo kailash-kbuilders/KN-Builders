@@ -46,15 +46,15 @@ import AppDetailPage from './components/AppDetailPage';
 import CustomCursor from './components/CustomCursor';
 
 const WHATSAPP_NUMBER = '6377938441';
-const WHATSAPP_URL = `https://wa.me/91${WHATSAPP_NUMBER}?text=${encodeURIComponent('hey KN Builders I want to create')}`;
-const CONTACT_EMAIL = 'theamericanpulseofficial@gmail.com';
-const MAILTO_URL = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('Inquiry for KN Builders')}&body=${encodeURIComponent('Hello KN Builders,\n\nI want to discuss a project with you.\n\nBest regards,')}`;
+const WHATSAPP_DEFAULT_MESSAGE = 'Hi KN Builders! I checked out your portfolio and would like to talk about an app/website project.';
+const WHATSAPP_URL = `https://wa.me/91${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_DEFAULT_MESSAGE)}`;
+const CONTACT_EMAIL = 'knbuildersofficial@gmail.com';
+const MAILTO_URL = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('Inquiry for KN Builders')}&body=${encodeURIComponent('Hi KN Builders!\n\nI checked out your portfolio and would like to talk about an app/website project.\n\nBest regards,')}`;
 
 function getSlug(title: string) {
   return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
 }
 
-// Ordered sections matching the EXACT visual order of the page
 const NAV_SECTIONS = [
   { id: 'home', label: 'Home' },
   { id: 'skills-section', label: 'Skills' },
@@ -744,17 +744,21 @@ export default function App() {
             </div>
 
             {/* Main Headline */}
-            <div className="space-y-2 slide-right-enter delay-75">
-              <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-black tracking-tight leading-[1.14]">
-                <span>Hello! Welcome</span>
-                <br />
-                <span>to </span>
+            <div className="space-y-2.5 slide-right-enter delay-75">
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-blue-400">
+                <span>Official Portfolio &amp; Development Studio</span>
+              </div>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.08]">
+                <span className="text-white">KN </span>
                 <span className="bg-gradient-to-r from-[#3b82f6] via-[#60a5fa] to-[#a855f7] bg-clip-text text-transparent">
-                  KN Builders
+                  Builders
                 </span>
               </h1>
-              <p className="text-sm sm:text-base text-slate-400 font-normal pt-1 leading-relaxed">
-                We design and build apps, websites and creative visuals, from idea to launch.
+              <p className="text-sm sm:text-base text-slate-300 font-medium pt-0.5">
+                KN Builder by <span className="text-white font-bold">Kailash</span> – Custom Android Apps &amp; Modern Websites
+              </p>
+              <p className="text-xs sm:text-sm text-slate-400 font-normal leading-relaxed">
+                Building high-performance mobile apps, web solutions, and digital products from idea to launch.
               </p>
             </div>
 
@@ -950,7 +954,36 @@ export default function App() {
               )}
             </section>
 
-            {/* ===================== HOW WE WORK SECTION (Step 5 in sequence) ===================== */}
+            {/* ===================== ABOUT SECTION (SEO & Screen Readers - Visually hidden to keep page clean & uncluttered) ===================== */}
+            <section
+              id="about-section"
+              className="sr-only"
+              aria-label="About KN Builders – Software Development Studio by Kailash"
+            >
+              <h2>About KN Builders (KN Builder by Kailash / KN by Kailash / KN Builder Kailash)</h2>
+              <p>
+                Hi, I am Kailash, the developer and founder behind KN Builders (also known as KN Builder by Kailash, KN by Kailash, and KN Builder Kailash). We specialize in building fast, scalable Android mobile applications (APKs) and high-performance websites.
+              </p>
+              <p>
+                From custom Android APK builds like Trip Tracker, Audio Router, Smart Alarm &amp; Notepad, QR Studio, and PDF Tool Kit to modern responsive web applications, every project is crafted with clean code, intuitive UI/UX design, and production reliability.
+              </p>
+              <div>
+                <span>KN Builders</span>
+                <span>KN Builder by Kailash</span>
+                <span>KN by Kailash</span>
+                <span>KN Builder Kailash</span>
+                <span>KN Builders App Development</span>
+                <span>Custom Android Apps (APK)</span>
+                <span>Modern Web Development</span>
+                <span>Kailash KNBuilders</span>
+              </div>
+              <div>
+                <p>Official Email: {CONTACT_EMAIL}</p>
+                <p>Direct WhatsApp: +91 {WHATSAPP_NUMBER}</p>
+              </div>
+            </section>
+
+            {/* ===================== HOW WE WORK SECTION (Step 6 in sequence) ===================== */}
             <section
               id="how-we-work-section"
               className="space-y-4"
@@ -1035,10 +1068,11 @@ export default function App() {
                     onClick={openMail}
                     type="button"
                     title={`Send email to ${CONTACT_EMAIL}`}
-                    className="p-4.5 rounded-2xl flex flex-col items-center justify-center gap-2 bg-[#14141c] hover:bg-[#1c1c28] border border-[#262636] text-white font-medium text-sm min-h-[96px] cursor-pointer interactive-card"
+                    className="p-4.5 rounded-2xl flex flex-col items-center justify-center gap-1.5 bg-[#14141c] hover:bg-[#1c1c28] border border-[#262636] text-white font-medium text-sm min-h-[96px] cursor-pointer interactive-card"
                   >
                     <EmailEnvelopeIcon className="w-6 h-6 shrink-0" />
-                    <span className="text-sm font-bold">Send Mail</span>
+                    <span className="text-sm font-bold">Email Us</span>
+                    <span className="text-[11px] text-slate-400 font-medium truncate max-w-[130px]">{CONTACT_EMAIL}</span>
                   </button>
                 </div>
 
@@ -1176,9 +1210,12 @@ export default function App() {
         </div>
 
         {/* ===================== FOOTER ===================== */}
-        <footer className="text-center pt-16 pb-8 border-t border-[#181822] mt-16 flex flex-col items-center justify-center">
-          <p className="text-xs sm:text-sm text-slate-500 font-medium">
-            © 2026 KN Builders
+        <footer className="text-center pt-16 pb-8 border-t border-[#181822] mt-16 flex flex-col items-center justify-center space-y-2">
+          <p className="text-xs sm:text-sm text-slate-400 font-medium">
+            © 2026 KN Builders • Built by Kailash
+          </p>
+          <p className="text-xs text-slate-500">
+            Official Email: <a href={`mailto:${CONTACT_EMAIL}`} className="text-blue-400 hover:text-blue-300 underline">{CONTACT_EMAIL}</a> • WhatsApp: +91 {WHATSAPP_NUMBER}
           </p>
         </footer>
       </main>
