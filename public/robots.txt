@@ -1,11 +1,8 @@
 # Robots.txt for KN Builders
 User-agent: *
+Allow: /
 Disallow: /admin
 Disallow: /admin/
-Disallow: /*admin*
-Disallow: /*?*admin*
-Disallow: /*#*admin*
-Allow: /
 
 # Sitemap location
 Sitemap: https://kn-builders.vercel.app/sitemap.xml

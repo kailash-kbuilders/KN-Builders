@@ -781,7 +781,10 @@ export default function App() {
                 </span>
               </h1>
               <p className="text-sm sm:text-base text-slate-300 font-medium pt-0.5">
-                KN Builder by <span className="text-white font-bold">Kailash &amp; Naveen</span> – Custom Android Apps &amp; Modern Websites
+                Custom Android Apps &amp; Modern Websites
+                <span className="sr-only">
+                  KN Builder by Kailash and Naveen – Custom Android Apps &amp; Modern Websites by Kailash &amp; Naveen (KN by Kailash / KN by Naveen / knbuilder)
+                </span>
               </p>
               <p className="text-xs sm:text-sm text-slate-400 font-normal leading-relaxed">
                 Building high-performance mobile apps, web solutions, and digital products from idea to launch.
