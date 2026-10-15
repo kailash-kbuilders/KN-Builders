@@ -197,6 +197,32 @@ export default function App() {
     localStorage.setItem('kn_inquiry_idea', val);
   };
 
+  // Dynamic SEO and Security: Ensures Admin is never indexed (noindex, nofollow) while portfolio is strongly indexed
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+
+    let robotsMeta = document.querySelector('meta[name="robots"]') as HTMLMetaElement | null;
+    if (!robotsMeta) {
+      robotsMeta = document.createElement('meta');
+      robotsMeta.name = 'robots';
+      document.head.appendChild(robotsMeta);
+    }
+
+    if (isAdminView) {
+      document.title = 'Admin Panel | Restricted Access';
+      robotsMeta.content = 'noindex, nofollow, noarchive, nosnippet';
+    } else if (activeAppSlug) {
+      const currentApp = apps.find((a) => getSlug(a.title) === activeAppSlug);
+      if (currentApp) {
+        document.title = `${currentApp.title} – Download APK | KN Builders`;
+        robotsMeta.content = 'index, follow, max-image-preview:large';
+      }
+    } else {
+      document.title = 'KN Builders | Official Website – App & Web Development by Kailash & Naveen (KN Builder)';
+      robotsMeta.content = 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
+    }
+  }, [isAdminView, activeAppSlug, apps]);
+
   // Reversible On-Scroll Slide-in From Right Animation Trigger
   // Triggers every time elements enter viewport (scrolling down or scrolling back up!)
   // Preserves form input state & messages safely
@@ -755,7 +781,7 @@ export default function App() {
                 </span>
               </h1>
               <p className="text-sm sm:text-base text-slate-300 font-medium pt-0.5">
-                KN Builder by <span className="text-white font-bold">Kailash</span> – Custom Android Apps &amp; Modern Websites
+                KN Builder by <span className="text-white font-bold">Kailash &amp; Naveen</span> – Custom Android Apps &amp; Modern Websites
               </p>
               <p className="text-xs sm:text-sm text-slate-400 font-normal leading-relaxed">
                 Building high-performance mobile apps, web solutions, and digital products from idea to launch.
@@ -958,28 +984,60 @@ export default function App() {
             <section
               id="about-section"
               className="sr-only"
-              aria-label="About KN Builders – Software Development Studio by Kailash"
+              aria-label="About KN Builders – Software Development Studio by Kailash & Naveen"
             >
-              <h2>About KN Builders (KN Builder by Kailash / KN by Kailash / KN Builder Kailash)</h2>
+              <h2>About KN Builders (KN Builder by Kailash / KN Builder by Naveen / KN by Kailash / KN by Naveen)</h2>
               <p>
-                Hi, I am Kailash, the developer and founder behind KN Builders (also known as KN Builder by Kailash, KN by Kailash, and KN Builder Kailash). We specialize in building fast, scalable Android mobile applications (APKs) and high-performance websites.
+                KN Builders (also known as KN Builder by Kailash, KN Builder by Naveen, KN by Kailash, KN by Naveen, KN Builder Kailash, and KN Builder Naveen) is the official software development studio founded by Kailash and Naveen. We specialize in custom Android mobile application development (APKs), production Play Store releases, and high-performance modern web development.
               </p>
               <p>
-                From custom Android APK builds like Trip Tracker, Audio Router, Smart Alarm &amp; Notepad, QR Studio, and PDF Tool Kit to modern responsive web applications, every project is crafted with clean code, intuitive UI/UX design, and production reliability.
+                From custom Android APK builds like Trip Tracker, Audio Router, Smart Alarm &amp; Notepad, QR Studio, and PDF Tool Kit to full-stack modern responsive web applications, every project is crafted with clean code, intuitive UI/UX design, and production reliability.
               </p>
               <div>
                 <span>KN Builders</span>
+                <span>KN Builder</span>
+                <span>KNBuilders</span>
+                <span>kn builder</span>
+                <span>kn builders</span>
+                <span>KN BUILDERS</span>
+                <span>KN BUILDER</span>
+                <span>knbuilder</span>
+                <span>knbuilders</span>
+                <span>kn builder by kailash</span>
+                <span>kn builder by naveen</span>
+                <span>kn by kailash</span>
+                <span>kn by naveen</span>
+                <span>kn builder kailash</span>
+                <span>kn builder naveen</span>
                 <span>KN Builder by Kailash</span>
+                <span>KN Builder by Naveen</span>
                 <span>KN by Kailash</span>
+                <span>KN by Naveen</span>
                 <span>KN Builder Kailash</span>
-                <span>KN Builders App Development</span>
+                <span>KN Builder Naveen</span>
+                <span>KN Builders by Kailash</span>
+                <span>KN Builders by Naveen</span>
+                <span>KN Builders Kailash</span>
+                <span>KN Builders Naveen</span>
+                <span>Kailash KNBuilders</span>
+                <span>Naveen KNBuilders</span>
+                <span>Kailash KN Builders</span>
+                <span>Naveen KN Builders</span>
+                <span>kailash kn</span>
+                <span>naveen kn</span>
+                <span>kn builder app dev</span>
+                <span>kn builder app development</span>
+                <span>kn builders app developer</span>
+                <span>kn builder web development</span>
+                <span>kn builders web developer</span>
                 <span>Custom Android Apps (APK)</span>
                 <span>Modern Web Development</span>
-                <span>Kailash KNBuilders</span>
+                <span>Kailash</span>
+                <span>Naveen</span>
               </div>
               <div>
-                <p>Official Email: {CONTACT_EMAIL}</p>
-                <p>Direct WhatsApp: +91 {WHATSAPP_NUMBER}</p>
+                <p>Official Email: {CONTACT_EMAIL} (knbuildersofficial@gmail.com)</p>
+                <p>Direct Phone &amp; WhatsApp: +91 {WHATSAPP_NUMBER} ({WHATSAPP_NUMBER})</p>
               </div>
             </section>
 
@@ -1212,7 +1270,7 @@ export default function App() {
         {/* ===================== FOOTER ===================== */}
         <footer className="text-center pt-16 pb-8 border-t border-[#181822] mt-16 flex flex-col items-center justify-center space-y-2">
           <p className="text-xs sm:text-sm text-slate-400 font-medium">
-            © 2026 KN Builders • Built by Kailash
+            © 2026 KN Builders • Built by Kailash &amp; Naveen
           </p>
           <p className="text-xs text-slate-500">
             Official Email: <a href={`mailto:${CONTACT_EMAIL}`} className="text-blue-400 hover:text-blue-300 underline">{CONTACT_EMAIL}</a> • WhatsApp: +91 {WHATSAPP_NUMBER}
