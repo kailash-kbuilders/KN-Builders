@@ -59,7 +59,18 @@ interface AdminPanelProps {
   onRefresh: () => void;
 }
 
-const ADMIN_PASSWORD = '2026';
+// Secure cryptographic digest of authorized credentials (SHA-256)
+// Protects administrative security: plaintext password never exists in bundles or source
+const ADMIN_CREDENTIAL_DIGEST = 'e1b0f7051f066427b80ef126520011537ad638de6e1134260bba78fba91611cb';
+const ADMIN_SESSION_STORAGE_KEY = 'kn_admin_sec_auth_token';
+
+async function computeSHA256Hex(text: string): Promise<string> {
+  const enc = new TextEncoder().encode(text);
+  const hashBuf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(hashBuf))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
 
 // Compresses image for healthy Firestore document storage (<100KB per screenshot)
 function compressImage(file: File, maxWidth = 800, quality = 0.75): Promise<string> {
@@ -124,12 +135,23 @@ export default function AdminPanel({
   onBack,
   onRefresh
 }: AdminPanelProps) {
-  // Password Authentication State
+  // Secure Authentication State: All legacy sessions are automatically invalidated
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return sessionStorage.getItem('kn_admin_auth') === 'true';
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.removeItem('kn_admin_auth');
+        localStorage.removeItem('kn_admin_auth');
+        const token = sessionStorage.getItem(ADMIN_SESSION_STORAGE_KEY);
+        return token === ADMIN_CREDENTIAL_DIGEST;
+      } catch (e) {
+        return false;
+      }
+    }
+    return false;
   });
   const [passwordInput, setPasswordInput] = useState<string>('');
   const [authError, setAuthError] = useState<string | null>(null);
+  const [isVerifying, setIsVerifying] = useState<boolean>(false);
 
   const [activeTab, setActiveTab] = useState<'apps' | 'websites' | 'skills' | 'inquiries'>(() => {
     if (initialTab) return initialTab;
@@ -257,21 +279,40 @@ export default function AdminPanel({
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (passwordInput.trim() === ADMIN_PASSWORD) {
-      setIsAuthenticated(true);
-      sessionStorage.setItem('kn_admin_auth', 'true');
-      setAuthError(null);
-    } else {
-      setAuthError('Incorrect PIN! Please enter 2026.');
+    const entered = passwordInput.trim().toLowerCase();
+    if (!entered) return;
+
+    setIsVerifying(true);
+    setAuthError(null);
+
+    try {
+      const digest = await computeSHA256Hex(entered);
+      if (digest === ADMIN_CREDENTIAL_DIGEST) {
+        setIsAuthenticated(true);
+        sessionStorage.setItem(ADMIN_SESSION_STORAGE_KEY, digest);
+        setAuthError(null);
+      } else {
+        setAuthError('Access denied. Incorrect admin password.');
+      }
+    } catch (err) {
+      console.error('Authentication check failed:', err);
+      setAuthError('Authentication verification failed.');
+    } finally {
+      setIsVerifying(false);
     }
   };
 
   const handleLogout = () => {
     setIsAuthenticated(false);
-    sessionStorage.removeItem('kn_admin_auth');
+    try {
+      sessionStorage.removeItem(ADMIN_SESSION_STORAGE_KEY);
+      sessionStorage.removeItem('kn_admin_auth');
+      localStorage.removeItem('kn_admin_auth');
+    } catch (e) {}
     setPasswordInput('');
+    setAuthError(null);
   };
 
   // App Logo file to dataURL helper
@@ -518,7 +559,7 @@ export default function AdminPanel({
     }
   };
 
-  // PASSWORD GATE: PIN "2026"
+  // RESTRICTED ADMIN ACCESS GATE
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
@@ -529,7 +570,7 @@ export default function AdminPanel({
 
           <div>
             <h2 className="text-2xl font-black tracking-tight text-white">KN Builders Admin</h2>
-            <p className="text-xs text-slate-400 mt-1">Enter PIN (2026) to manage apps, websites, skills & inquiries</p>
+            <p className="text-xs text-slate-400 mt-1">Authorized access only. Enter admin password to proceed.</p>
           </div>
 
           {authError && (
@@ -550,16 +591,17 @@ export default function AdminPanel({
                   setPasswordInput(e.target.value);
                   setAuthError(null);
                 }}
-                placeholder="PIN: 2026"
-                className="w-full bg-[#161622] border border-[#2a2a3a] rounded-2xl pl-11 pr-4 py-3.5 text-center text-lg font-bold tracking-widest text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                placeholder="Enter password"
+                className="w-full bg-[#161622] border border-[#2a2a3a] rounded-2xl pl-11 pr-4 py-3.5 text-center text-lg font-bold tracking-wider text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
               />
             </div>
 
             <button
               type="submit"
-              className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-lg shadow-blue-600/30 transition-all cursor-pointer active:scale-95 text-sm"
+              disabled={isVerifying}
+              className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold rounded-2xl shadow-lg shadow-blue-600/30 transition-all cursor-pointer active:scale-95 text-sm"
             >
-              Unlock Admin Panel
+              {isVerifying ? 'Verifying...' : 'Unlock Admin Panel'}
             </button>
           </form>
 
